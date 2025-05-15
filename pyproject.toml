@@ -1,0 +1,42 @@
+[build-system]
+requires = ["flit-core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "peakweather"
+description = "PeakWeather: MeteoSwiss Weather Station Measurements for Spatiotemporal Deep Learning."
+authors = [
+    { name = "Ivan Marisca", email = "marisca.ivan@gmail.com" },
+    { name = "Michele Cattaneo", email = "michelecattaneo18@gmail.com" },
+    { name = "Daniele Zambon", email = "daniele.zambon@usi.ch"}
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.8"
+dynamic = ["version"]
+
+# Core dependencies
+dependencies = ["numpy>=1.20", "pandas>=1.2", "tqdm>=4.50", "pyarrow"]
+
+[project.optional-dependencies]
+topography = ["xarray", "zarr<3.0.0"]
+
+[tool.flit]
+module = "peakweather"
+
+# Ruff config
+[tool.ruff]
+line-length = 88
+indent-width = 4
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["D", "E", "F", "I", "W"]
+
+[tool.ruff.format]
+quote-style = "double"
+skip-magic-trailing-comma = true
+line-ending = "auto"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
