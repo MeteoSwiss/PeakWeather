@@ -91,6 +91,8 @@ ds.get_observations(stations='KLO',
 
 ## Detailed Usage
 
+For detailed usage and parameter descriptions, please refer to the docstring of the `PeakWeatherDataset` class, which provides extended documentation on its functionality and options.
+
 ### Re-sampling
 ```python
 ds = PeakWeatherDataset(
@@ -99,6 +101,7 @@ ds = PeakWeatherDataset(
         years=None,  # Years to include in the dataset (None for all)
         parameters=None,  # Parameters to include in the dataset (None for all)
         extended_topo_vars="none",  # Optional extended topographic variables
+        extended_nwp_vars="none",  # Optional extended NWP model (ICON) variables
         imputation_method="zero",  # Method for imputing missing values
         freq="h",  # Frequency of the data (e.g., "h" for hourly)
         compute_uv=True,  # Compute u and v components of wind
