@@ -13,20 +13,29 @@ Windows = namedtuple("Windows", ["x", "mask_x", "y", "mask_y"])
 
 
 class PeakWeatherDataset:
-    """[Brief dataset description].
-
-    This class loads and reads the PeakWeather dataset. It is a high-quality dataset 
-    of surface weather observations collected over more than 8 years every 10 minutes,
-    from 1 January 2017 to 31 March 2025, obtained from SwissMetNet, 
-    MeteoSwiss' measurement network. The dataset is complemented by topographical features 
-    at 50m resolution and NWP ensemble forecast from the ICON-CH1-EPS operational model. 
+    """
+    PeakWeather is a high-quality meteorological dataset derived from `SwissMetNet
+    <https://www.meteoswiss.admin.ch/weather/measurement-systems/land-based-stations/automatic-measurement-network.html>`_, 
+    the automated measurement network operated by MeteoSwiss. It offers a robust resource 
+    for research and applications in spatiotemporal modeling.
     
+    PeakWeather includes high-frequency meteorological observations recorded every 
+    10 minutes, collected from 302 ground stations distributed across Switzerland, 
+    covering the period from January 1, 2017 to March 31, 2025. The dataset also 
+    provides high-resolution topographic features at 50-meter resolution and ensemble 
+    forecasts from the ICON-CH1-EPS operational numerical weather prediction (NWP) model.
+    The dataset is described in more details in
+    `"PeakWeather: MeteoSwiss Weather Station Measurements for Spatiotemporal Deep Learning"
+    <https://arxiv.org/abs/2506.13652>`_ (Zambon et al., 2025).
+
+    This class loads and reads the PeakWeather dataset, providing utilities for 
+    accessing, preprocessing, and integrating the data into machine learning workflows.
 
     Dataset size:
         + Time steps: 433728
         + Stations: 302
         + Channels: 8
-        + Sampling rate: 10 minutes
+        + Sampling interval: 10 minutes
 
     Channels:
         + ``wind_direction``: Wind direction (degree). Ten minutes mean.
@@ -42,7 +51,8 @@ class PeakWeatherDataset:
           Instant value.
 
     Static attributes:
-        + :obj:`stations_table`: Information associated with the stations.
+        + :obj:`stations_table`: Information associated with the stations, including
+            name, type, latitude, longitude, height, and topographical descriptors.
         + :obj:`installation_table`: Information about stations' installation.
         + :obj:`parameters_table`: Description of the quantities measured.
 

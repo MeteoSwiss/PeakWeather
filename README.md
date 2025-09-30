@@ -12,8 +12,8 @@ and presented in the paper
 
 
 <div style="display: flex; justify-content: center; gap: 20px;">
-  <img src="./figures/stations.png" alt="Description" width="350"/>
-  <img src="./figures/station_graph.png" alt="Description" width="350"/>
+  <img src="./docs/source/_static/stations.png" alt="Stations" width="350"/>
+  <img src="./docs/source/_static/station_graph.png" alt="Station graph" width="350"/>
 </div>
 
 ## Quickstart:
