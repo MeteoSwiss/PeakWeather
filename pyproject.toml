@@ -21,6 +21,7 @@ dependencies = ["numpy>=1.20", "pandas>=1.2", "tqdm>=4.50", "pyarrow"]
 [project.optional-dependencies]
 topography = ["xarray", "zarr<3.0.0"]
 docs = ["sphinx", "nbsphinx", "myst_parser", "furo", "ipython", "sphinx-copybutton"]
+dev = ["pytest"]
 
 [tool.flit]
 module = "peakweather"

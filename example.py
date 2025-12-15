@@ -3,7 +3,7 @@ from peakweather import PeakWeatherDataset
 
 dataset = PeakWeatherDataset(
     root="data",  # Path to the dataset
-    pad_missing_variables=True,  # Pad missing variables with NaN
+    pad_missing_values=True,  # Pad missing variables with NaN
     years=None,  # Years to include in the dataset (None for all)
     parameters=None,  # Parameters to include in the dataset (None for all)
     extended_topo_vars="none",  # Optional extended topographic variables
@@ -21,7 +21,7 @@ print(f"Number of stations: {dataset.num_stations}")
 print(dataset.stations_table.head(10))
 
 print(f"Number of parameters: {dataset.num_parameters}")
-print(f"Parameters")
+print("Parameters")
 dataset.show_parameters_description()
 
 # %% Show data
@@ -36,7 +36,7 @@ for param in dataset.parameters_table.index:
     print(f"Parameter {param} availability: {p_mask.mean():.2%}")
 
 # %% Get observations for a specific station and parameters
-print(f"Get wind speed and direction for station KLO")
+print("Get wind speed and direction for station KLO")
 klo_data = dataset.get_observations(stations="KLO",
                                     parameters=["wind_speed", "wind_direction"],
                                     as_numpy=True)
@@ -55,7 +55,7 @@ print(f"Target shape: {windows.y.shape}")
 print(f"Percentage of missing values in target: {1 - windows.mask_y.mean():.2%}")
 
 # %% Get windows for specific stations, parameters, and time range
-print(f"Get observations as windows for specific stations, parameters, and time range")
+print("Get observations as windows for specific stations, parameters, and time range")
 print(f"Stations: {dataset.stations[:10]}")
 sub_windows = dataset.get_windows(window_size=window_size,
                                   horizon_size=lead_times,
