@@ -90,10 +90,10 @@ class PeakWeatherDataset:
             :obj:`"max"`, :obj:`"sum"`, :obj:`"last"`.
             (default: :obj:`None`)
     """
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     base_url = ("https://huggingface.co/datasets/MeteoSwiss/PeakWeather/"
-                "resolve/main/data/")
+                "resolve/0b440af7b855c68288efeb0fffb27f5ab2cc56fa/data/")
 
     available_parameters = {
         "temperature": "tre200s0",
