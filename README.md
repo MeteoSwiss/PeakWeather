@@ -6,10 +6,11 @@ This repository contains the code to load and preprocess the PeakWeather dataset
 
 and presented in the paper
 
-> **PeakWeather: MeteoSwiss Weather Station Measurements for Spatiotemporal Deep Learning**  
+> [**PeakWeather: MeteoSwiss Weather Station Measurements for Spatiotemporal Deep Learning**](https://arxiv.org/abs/2506.13652)  
 > *Daniele Zambon², Michele Cattaneo¹, Ivan Marisca², Jonas Bhend¹, Daniele Nerini¹, Cesare Alippi² ³*  
 > ¹ MeteoSwiss, ² USI, IDSIA, ³ PoliMi
 
+Refer to [peakweather.readthedocs.io](https://peakweather.readthedocs.io/) for the documentation.
 
 <div style="display: flex; justify-content: center; gap: 20px;">
   <img src="./docs/source/_static/stations.png" alt="Stations" width="350"/>
@@ -75,8 +76,8 @@ ds.get_observations(stations='KLO', parameters=['pressure', 'temperature'])
 # Get observations for a specific time frame
 ds.get_observations(stations='KLO', 
                     parameters=['wind_speed', 'wind_direction'], 
-                    first_date=pd.Timestamp('2024-08-01 16:32'),
-                    last_date=pd.Timestamp('2024-08-01 17:26'))
+                    first_date='2024-08-01 16:32',
+                    last_date='2024-08-01 17:26')
 
 ```
 
@@ -97,11 +98,11 @@ For detailed usage and parameter descriptions, please refer to the docstring of 
 ```python
 ds = PeakWeatherDataset(
         root="data",  # Path to the dataset
-        pad_missing_variables=True,  # Pad missing variables with NaN
+        pad_missing_values=True,  # Pad missing values with NaN
         years=None,  # Years to include in the dataset (None for all)
         parameters=None,  # Parameters to include in the dataset (None for all)
         extended_topo_vars="none",  # Optional extended topographic variables
-        extended_nwp_vars="none",  # Optional extended NWP model (ICON) variables
+        extended_nwp_pars="none",  # Optional extended NWP model (ICON) variables
         imputation_method="zero",  # Method for imputing missing values
         freq="h",  # Frequency of the data (e.g., "h" for hourly)
         compute_uv=True,  # Compute u and v components of wind
@@ -109,6 +110,7 @@ ds = PeakWeatherDataset(
         aggregation_methods={'temperature': 'mean'} # Use specific aggregation
     )
 
+ds.parameters_table["aggregation"]
 ```
 
 The above dataset is initialized with hourly frequency. The 10-minute values are aggregated with the default methods below:
@@ -120,7 +122,7 @@ The above dataset is initialized with hourly frequency. The 10-minute values are
 | pressure       | last          |
 | sunshine       | sum           |
 | temperature    | last          |
-| wind_direction | mean          |
+| wind_direction | circ_mean     |
 | wind_gust      | max           |
 | wind_speed     | mean          |
 | wind_u         | mean          |
@@ -161,8 +163,8 @@ We can get observations for a specific station and parameter as arrays:
 
 # Get wind gust and direction for station KLO
 klo_data = ds.get_observations(stations="KLO",
-                                parameters=["wind_gust", "wind_direction"],
-                                as_numpy=True)
+                               parameters=["wind_gust", "wind_direction"],
+                               as_numpy=True)
 
 print(f"KLO data shape: {klo_data.shape}")
 print(f"KLO maximum wind gust: {klo_data[..., 0].max():.2f} m/s")
@@ -176,11 +178,11 @@ We can obtain the data for a sliding window of a size $W$ and horizon $H$.
 window_size = 12
 lead_times = 3
 sub_windows = ds.get_windows(window_size=window_size,
-                                horizon_size=lead_times,
-                                stations=ds.stations[:10],
-                                parameters=["wind_speed", "wind_direction"],
-                                first_date="2020-01-01",
-                                last_date="2022-01-01")
+                             horizon_size=lead_times,
+                             stations=ds.stations[:10],
+                             parameters=["wind_speed", "wind_direction"],
+                             first_date="2020-01-01",
+                             last_date="2022-01-01")
 print(f"Windows x shape: {sub_windows.x.shape}")
 print(f"Windows mask_x shape: {sub_windows.mask_x.shape}")
 print(f"Windows y shape: {sub_windows.y.shape}")
