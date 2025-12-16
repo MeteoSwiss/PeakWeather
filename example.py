@@ -30,24 +30,26 @@ print(dataset.observations.head(10))
 
 # Get observations and mask for each parameter
 for param in dataset.parameters_table.index:
-    p_data, p_mask = dataset.get_observations(parameters=param,
-                                              as_numpy=True,
-                                              return_mask=True)
+    p_data, p_mask = dataset.get_observations(
+        parameters=param, as_numpy=True, return_mask=True
+    )
     print(f"Parameter {param} availability: {p_mask.mean():.2%}")
 
 # %% Get observations for a specific station and parameters
 print("Get wind speed and direction for station KLO")
-klo_data = dataset.get_observations(stations="KLO",
-                                    parameters=["wind_speed", "wind_direction"],
-                                    as_numpy=True)
+klo_data = dataset.get_observations(
+    stations="KLO", parameters=["wind_speed", "wind_direction"], as_numpy=True
+)
 print(f"KLO data shape: {klo_data.shape}")
 print(f"KLO maximum wind speed: {klo_data[..., 0].max():.2f} m/s")
 
 # %% Get windows
 window_size = 12
 lead_times = 3
-print(f"Get observations as windows with a sliding window of size {window_size} "
-      f"and lead time {lead_times}")
+print(
+    f"Get observations as windows with a sliding window of size {window_size} "
+    f"and lead time {lead_times}"
+)
 windows = dataset.get_windows(window_size=window_size, horizon_size=lead_times)
 print(f"Windows shape: {windows.x.shape}")
 print(f"Percentage of missing values in input: {1 - windows.mask_x.mean():.2%}")
@@ -57,10 +59,12 @@ print(f"Percentage of missing values in target: {1 - windows.mask_y.mean():.2%}"
 # %% Get windows for specific stations, parameters, and time range
 print("Get observations as windows for specific stations, parameters, and time range")
 print(f"Stations: {dataset.stations[:10]}")
-sub_windows = dataset.get_windows(window_size=window_size,
-                                  horizon_size=lead_times,
-                                  stations=dataset.stations[:10],
-                                  parameters=["wind_speed", "wind_direction"],
-                                  first_date="2020-01-01",
-                                  last_date="2022-01-01")
+sub_windows = dataset.get_windows(
+    window_size=window_size,
+    horizon_size=lead_times,
+    stations=dataset.stations[:10],
+    parameters=["wind_speed", "wind_direction"],
+    first_date="2020-01-01",
+    last_date="2022-01-01",
+)
 print(f"Windows shape: {sub_windows.x.shape}")

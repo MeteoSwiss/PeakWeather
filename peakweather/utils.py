@@ -56,15 +56,18 @@ def sliding_window_view(data: np.ndarray, window_size: int) -> np.ndarray:
             ``(num_windows, window_size, *)``.
     """
     windows = np.lib.stride_tricks.sliding_window_view(
-        data,
-        window_shape=window_size,
-        axis=0,
+        data, window_shape=window_size, axis=0
     )
     windows = np.moveaxis(windows, -1, 1)
     return windows
 
 
-def xr_to_np(a: "xr.Dataset", pars: Optional[list] = None, sample_dim: Optional[int] = None, stack_dim: int = -1) -> np.ndarray:
+def xr_to_np(
+    a: "xr.Dataset",
+    pars: Optional[list] = None,
+    sample_dim: Optional[int] = None,
+    stack_dim: int = -1,
+) -> np.ndarray:
     r"""Extract variables from an :class:`~xarray.Dataset` and return them as
     a stacked :class:`~numpy.ndarray`.
 
@@ -74,7 +77,7 @@ def xr_to_np(a: "xr.Dataset", pars: Optional[list] = None, sample_dim: Optional[
             `None`, all data variables in `a` are used.
         sample_dim (int, optional): The dimension containing the samples in `a`,
             if present. If `sample_dim` is an `int`, the `sample_dim` dimension
-            is rearranged as leading dimension (samples, a.shape[~sample_dim]); 
+            is rearranged as leading dimension (samples, a.shape[~sample_dim]);
             `None` indicates no sampling dimension to be moved.
         stack_dim (int): The dimension along which the arrays are stacked.
 
@@ -88,15 +91,20 @@ def xr_to_np(a: "xr.Dataset", pars: Optional[list] = None, sample_dim: Optional[
     out = np.stack([a[p].data for p in pars], axis=stack_dim)
 
     if sample_dim is not None:
-        sample_dim = sample_dim if sample_dim > 0 else sample_dim + out.ndim - 1 # dim in a
-        stack_dim = stack_dim if stack_dim > 0 else stack_dim + out.ndim # dim in out
-        if sample_dim >= stack_dim:   # dim in out
+        sample_dim = (
+            sample_dim if sample_dim > 0 else sample_dim + out.ndim - 1
+        )  # dim in a
+        stack_dim = stack_dim if stack_dim > 0 else stack_dim + out.ndim  # dim in out
+        if sample_dim >= stack_dim:  # dim in out
             sample_dim += 1
         out = np.moveaxis(out, sample_dim, 0)
 
     return out
 
-def timestamps_from_xr(ds: "xr.Dataset", delta: str, tz: Optional[str] = "UTC") -> np.ndarray:
+
+def timestamps_from_xr(
+    ds: "xr.Dataset", delta: str, tz: Optional[str] = "UTC"
+) -> np.ndarray:
     r"""Compute a 2D array of timezone-aware timestamps by combining a reference
     time coordinate with a time-delta coordinate.
 
@@ -105,6 +113,7 @@ def timestamps_from_xr(ds: "xr.Dataset", delta: str, tz: Optional[str] = "UTC") 
             of type `datetime64[ns]` and a time-delta coordinate.
         delta (str): The name of the offset coordinate (e.g., `lag` or `lead`) of
             type `timedelta64[ns]`.
+        tz (str): Timezone.
 
     Returns:
         np.ndarray: A 2D array of shape `(num_reftime, num_deltas)` containing
