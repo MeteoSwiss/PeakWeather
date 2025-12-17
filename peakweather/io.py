@@ -9,7 +9,10 @@ from tqdm import tqdm
 
 
 class DownloadProgressBar(tqdm):
+    """Provides a progress bar for downloading files using urllib."""
+
     def update_to(self, b=1, bsize=1, tsize=None):
+        """Updates the progress bar."""
         if tsize is not None:
             self.total = tsize
         self.update(b * bsize - self.n)
@@ -80,7 +83,7 @@ def import_xarray() -> ModuleType:
         ModuleNotFoundError: If 'xarray' is not installed.
     """
     try:
-        import zarr
+        import zarr  # noqa: F401
     except ImportError as e:
         raise ModuleNotFoundError(
             "The 'zarr' library is required for this functionality. "

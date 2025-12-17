@@ -31,13 +31,15 @@ module = "peakweather"
 line-length = 88
 indent-width = 4
 target-version = "py38"
+exclude = ["test"]
 
 [tool.ruff.lint]
 select = ["D", "E", "F", "I", "W"]
+ignore = ["D100", "D105", "D107", "D205"]
 
 [tool.ruff.format]
 quote-style = "double"
-skip-magic-trailing-comma = true
+skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff.lint.pydocstyle]

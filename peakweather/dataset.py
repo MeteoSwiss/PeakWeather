@@ -1,6 +1,15 @@
 import os
 from dataclasses import dataclass
-from typing import List, Literal, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -14,42 +23,48 @@ from .utils import (
     xr_to_np,
 )
 
+if TYPE_CHECKING:
+    import xarray as xr
+
 FrameArray = Union[pd.DataFrame, np.ndarray]
 
 
 @dataclass
 class Windows:
-    """Windows is a data class containing sliding window data, either as numpy arrays or
-    Xarray datasets.
+    """Windows is a data class containing sliding window data, either as
+    :class:`numpy.ndarray`, :pandas.DataFrame`, or :class:`xarray.Dataset`.
 
-    Attributes:
-    ----------
-    x : Union[pd.DataFrame, np.ndarray, xr.Dataset]
-        Input data of the look-back window.
-    mask_x : Union[pd.DataFrame, np.ndarray, xr.Dataset]
-        Boolean mask for x indicating valid or missing values.
-    y : Union[pd.DataFrame, np.ndarray, xr.Dataset]
-        Target data of the horizon window.
-    mask_y : Union[pd.DataFrame, np.ndarray, xr.Dataset]
-        Boolean mask for y indicating valid or missing values.
-    index_x : Optional[Union[pd.DatetimeIndex, np.ndarray]], default=None
-        Timestamps or indices corresponding to the values in x.
-    index_y : Optional[Union[pd.DatetimeIndex, np.ndarray]], default=None
-        Timestamps or indices corresponding to the values in y.
-    nwp : Optional[Union[np.ndarray, xr.Dataset]], default=None
-        Numerical Weather Prediction (ICON-CH1-EPS) data associated with the horizon
-        window y.
-    nwp_to_y : Optional[Sequence[int]], default=None
-        Mapping of NWP parameters to the target parameters in y.
-        Specifies which NWP variables correspond to which y variables.
+    Args:
+        x (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Input data of the
+            look-back window.
+        mask_x (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Boolean mask for
+            :attr:`x` indicating valid or missing values.
+        y (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Target data of the
+            horizon window.
+        mask_y (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Boolean mask for
+            :attr:`y` indicating valid or missing values.
+        index_x (pandas.DatetimeIndex | numpy.ndarray, optional): Timestamps or indices
+            corresponding to the values in :attr:`x`.
+            (default: :obj:`None`)
+        index_y (pandas.DatetimeIndex | numpy.ndarray, optional): Timestamps or indices
+            corresponding to the values in :attr:`y`.
+            (default: :obj:`None`)
+        nwp (numpy.ndarray | xarray.Dataset, optional): Numerical Weather Prediction
+            (ICON-CH1-EPS) data associated with the target horizon.
+            (default: :obj:`None`)
+        nwp_to_y (Sequence[int], optional): Mapping of NWP parameters to the target
+            parameters in :attr:`y`. Specifies which NWP variables correspond to which
+            target variables.
+            (default: :obj:`None`)
     """
-    x: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
-    mask_x: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
-    y: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
-    mask_y: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
+
+    x: Union[pd.DataFrame, np.ndarray, xr.Dataset]
+    mask_x: Union[pd.DataFrame, np.ndarray, xr.Dataset]
+    y: Union[pd.DataFrame, np.ndarray, xr.Dataset]
+    mask_y: Union[pd.DataFrame, np.ndarray, xr.Dataset]
     index_x: Optional[Union[pd.DatetimeIndex, np.ndarray]] = None
     index_y: Optional[Union[pd.DatetimeIndex, np.ndarray]] = None
-    nwp: Optional[Union[np.ndarray, "xr.Dataset"]] = None
+    nwp: Optional[Union[np.ndarray, xr.Dataset]] = None
     nwp_to_y: Optional[Sequence[int]] = None
 
 
@@ -61,18 +76,18 @@ class PeakWeatherDataset:
 
     PeakWeather includes high-frequency meteorological observations recorded every
     10 minutes, collected from 302 ground stations distributed across Switzerland,
-    covering the period from January 1, 2017 to March 31, 2025. The dataset also
+    covering the period from January 1st, 2017 to October 13th, 2025. The dataset also
     provides high-resolution topographic features at 50-meter resolution and ensemble
     forecasts from the ICON-CH1-EPS operational numerical weather prediction (NWP)
-    model. The dataset is described in more details in
-    `"PeakWeather: MeteoSwiss Weather Station Measurements for Spatiotemporal Deep Learning"
+    model. The dataset is described in more details in `"PeakWeather: MeteoSwiss
+    Weather Station Measurements for Spatiotemporal Deep Learning"
     <https://arxiv.org/abs/2506.13652>`_ (Zambon et al., 2025).
 
     This class loads and reads the PeakWeather dataset, providing utilities for
     accessing, preprocessing, and integrating the data into machine learning workflows.
 
     Dataset size:
-        + Time steps: 433728
+        + Time steps: 461952
         + Stations: 302
         + Channels: 8
         + Sampling interval: 10 minutes
@@ -101,16 +116,19 @@ class PeakWeatherDataset:
             If :obj:`None`, the dataset is stored in the current working directory.
             (default: :obj:`None`)
         pad_missing_values (bool, optional): If :obj:`True`, pad missing
-            parameter values with NaN values. (default: :obj:`True`)
+            parameter values with NaN values.
+            (default: :obj:`True`)
         years (int or list of int, optional): The years to include in the dataset.
-            If :obj:`None`, all available years are included. (default: :obj:`None`)
+            If :obj:`None`, all available years are included.
+            (default: :obj:`None`)
         extended_topo_vars (str or list of str, optional): The topography variables
             to include in the dataset. If :obj:`None`, no topography variables are
-            included. (default: :obj:`"none"`)
+            included.
+            (default: :obj:`"none"`)
         extended_nwp_pars (str or list of str, optional): The NWP (ICON-CH1-EPS)
-            parameters
-            to include in the dataset. If :obj:`None`, no NWP parameters are
-            included. (default: :obj:`"none"`)
+            parameters to include in the dataset. If :obj:`None`, no NWP parameters are
+            included.
+            (default: :obj:`"none"`)
         imputation_method (str, optional): The method to use for imputing missing
             values. Options are "locf" (last observation carried forward), "zero"
             (fill with zero), or :obj:`None` (no imputation). (default: :obj:`"zero"`)
@@ -119,16 +137,20 @@ class PeakWeatherDataset:
             "cubic", "barycentric", "krogh", "akima", or "makima".
             (default: :obj:`"nearest"`)
         freq (str, optional): The frequency to resample the dataset to. If :obj:`None`,
-            no resampling is applied. (default: :obj:`None`)
+            no resampling is applied.
+            (default: :obj:`None`)
         compute_uv (bool): Whether the u-v components of the wind should be computed and
-        included in the dataset. (default: True)
+            included in the dataset.
+            (default: :obj:`True`)
         station_type (str, optional): The type of stations to consider, either
             meteorological stations or rain gauges. If not defined, all stations
-            will be included. (default: :obj:`None`)
+            will be included.
+            (default: :obj:`None`)
         aggregation_methods (dict, optional): If given allows to apply a different
             aggregation than the default one to the specified parameters. The
             dictionary must map the parameter string name to one of :obj:`"mean"`,
-            :obj:`"max"`, :obj:`"sum"`, :obj:`"last"`. (default: :obj:`None`)
+            :obj:`"max"`, :obj:`"sum"`, :obj:`"last"`.
+            (default: :obj:`None`)
     """
 
     __version__ = "0.2.0"
@@ -406,8 +428,8 @@ class PeakWeatherDataset:
 
     @property
     def missing_values(self) -> pd.Series:
-        """Missing values for each parameter, considering
-        stations equipped with the necessary sensor.
+        """Missing values for each parameter, considering stations equipped with the
+        necessary sensor.
         """
         valid_columns = self.mask.loc[:, self.mask.any()]
         mean_missing = {
@@ -655,6 +677,21 @@ class PeakWeatherDataset:
     def interpolate_topography(
         self, topographic_params: dict, stations_table: pd.DataFrame
     ) -> Optional[pd.DataFrame]:
+        """Interpolate topography variables to station locations.
+
+        It requires the module :mod:`xarray` to be installed.
+
+        Args:
+            topographic_params (dict): A dictionary containing the topography data
+                for each variable.
+            stations_table (pd.DataFrame): A DataFrame containing the station
+                metadata.
+
+        Returns:
+            Optional[pd.DataFrame]: A :class:`pandas.DataFrame` containing the
+                interpolated topography data for each station. If no topography
+                variables are provided, returns :obj:`None`.
+        """
         if not len(topographic_params):
             return None
 
@@ -680,19 +717,19 @@ class PeakWeatherDataset:
     def load(self, aggregation_methods: dict[str, str] = None):
         """Load the dataset.
 
-        This method downloads the dataset if it is not already present
-        and loads the data into memory. The data is returned as a tuple
-        containing the observations, mask, and static tables.
+        This method downloads the dataset if it is not already present and loads the
+        data into memory. The data is returned as a tuple containing the observations,
+        mask, and static tables.
 
-        The observations are resampled to the specified frequency and
-        missing values are imputed using the specified method.
+        The observations are resampled to the specified frequency and missing values
+        are imputed using the specified method.
 
-        The topography data is interpolated to the station locations
-        using the specified interpolation method.
+        The topography data is interpolated to the station locations using the
+        specified interpolation method.
 
         Args:
             aggregation_methods (dict, optional): If given, applies different
-            aggregation strategies for the specified parameters.
+                aggregation strategies for the specified parameters.
                 (default: :obj:`None`)
         """
         df_observations, static_tables, topography = self.load_raw(
@@ -735,6 +772,7 @@ class PeakWeatherDataset:
         direction_unit: Literal["deg", "rad"] = "deg",
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Computes the u,v components of the wind given wind speed and direction.
+
         The u component is the eastward component while v is the northward component.
 
         Args:
@@ -951,7 +989,19 @@ class PeakWeatherDataset:
 
         return self.np_windows_as_xr(windows, stations, parameters)
 
-    def np_windows_as_xr(self, windows, stations, parameters):
+    def np_windows_as_xr(self, windows: Windows, stations, parameters):
+        """Convert numpy sliding windows to xarray Dataset.
+
+        Args:
+            windows (Windows): Sliding windows in numpy format.
+            stations (list or str, optional): Station IDs to filter. If :obj:`None`,
+                all stations are used.
+            parameters (list or str, optional): Parameter IDs to filter. If :obj:`None`,
+                all parameters are used.
+
+        Returns:
+            xarray.Dataset: Sliding windows in xarray format.
+        """
         windows_coordinates = self._get_windows_coordinates(
             windows=windows, stations=stations, parameters=parameters
         )
@@ -967,8 +1017,25 @@ class PeakWeatherDataset:
         return windows_xr
 
     def align_windows(
-        self, obs: Windows, nwp: "xr.Dataset", drop_extra_y_pars: bool, as_xarray: bool
+        self, obs: Windows, nwp: xr.Dataset, drop_extra_y_pars: bool, as_xarray: bool
     ):
+        """Align observation windows with NWP forecast windows along the time axis.
+
+        Args:
+            obs (Windows): Observation windows to align.
+            nwp (xarray.Dataset): NWP forecast windows to align.
+            drop_extra_y_pars (bool): If :obj:`True`, drop observation parameters
+                that are not present in the NWP data. If :obj:`False`, keep all
+                observation parameters and store the mapping from NWP to observation
+                parameters in `obs.nwp_to_y`.
+            as_xarray (bool): If :obj:`True`, return the aligned data as
+                :class:`xarray.Dataset`. If :obj:`False`, return as
+                :class:`numpy.ndarray`.
+
+        Returns:
+            Tuple[Windows, Union[xarray.Dataset, np.ndarray]]: Aligned observation
+                windows and NWP forecast windows.
+        """
         xr = import_xarray()
 
         assert isinstance(nwp, xr.Dataset)
@@ -1263,8 +1330,8 @@ class PeakWeatherDataset:
             index_y=windows.index_y,
         )
 
-    def load_icon_data(self, icon_parameter: Union[str, Sequence[str]]) -> "xr.Dataset":
-        """Returns an Xarray dataset with the requested parameters.
+    def load_icon_data(self, icon_parameter: Union[str, Sequence[str]]):
+        """Returns an :class:`xarray.Dataset` with the requested parameters.
 
         Args:
             icon_parameter (str): The ICON parameters. Must be one of
@@ -1274,7 +1341,7 @@ class PeakWeatherDataset:
             ValueError: If the corresponding zarr is not available.
 
         Returns:
-            xr.Dataset: The dataset with the ICON forecasts.
+            xarray.Dataset: The dataset with the ICON forecasts.
         """
         if icon_parameter == "all":
             icon_parameter == self.available_icon

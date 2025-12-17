@@ -1,7 +1,10 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    import xarray as xr
 
 
 def to_pandas_freq(freq: str):
@@ -63,7 +66,7 @@ def sliding_window_view(data: np.ndarray, window_size: int) -> np.ndarray:
 
 
 def xr_to_np(
-    a: "xr.Dataset",
+    a: xr.Dataset,
     pars: Optional[list] = None,
     sample_dim: Optional[int] = None,
     stack_dim: int = -1,
@@ -72,7 +75,7 @@ def xr_to_np(
     a stacked :class:`~numpy.ndarray`.
 
     Args:
-        a (xr.Dataset): The input dataset containing one or more data variables.
+        a (xarray.Dataset): The input dataset containing one or more data variables.
         pars (list[str], optional): The names of the variables to extract. If
             `None`, all data variables in `a` are used.
         sample_dim (int, optional): The dimension containing the samples in `a`,
@@ -103,13 +106,13 @@ def xr_to_np(
 
 
 def timestamps_from_xr(
-    ds: "xr.Dataset", delta: str, tz: Optional[str] = "UTC"
+    ds: xr.Dataset, delta: str, tz: Optional[str] = "UTC"
 ) -> np.ndarray:
     r"""Compute a 2D array of timezone-aware timestamps by combining a reference
     time coordinate with a time-delta coordinate.
 
     Args:
-        ds (xr.Dataset): The input dataset containing a `reftime` coordinate
+        ds (xarray.Dataset): The input dataset containing a `reftime` coordinate
             of type `datetime64[ns]` and a time-delta coordinate.
         delta (str): The name of the offset coordinate (e.g., `lag` or `lead`) of
             type `timedelta64[ns]`.
