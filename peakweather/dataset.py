@@ -43,7 +43,6 @@ class Windows:
         Mapping of NWP parameters to the target parameters in y.
         Specifies which NWP variables correspond to which y variables.
     """
-
     x: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
     mask_x: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
     y: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
