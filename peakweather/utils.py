@@ -1,10 +1,7 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
-
-if TYPE_CHECKING:
-    import xarray as xr
 
 
 def to_pandas_freq(freq: str):
@@ -66,7 +63,7 @@ def sliding_window_view(data: np.ndarray, window_size: int) -> np.ndarray:
 
 
 def xr_to_np(
-    a: xr.Dataset,
+    a: "xr.Dataset",
     pars: Optional[list] = None,
     sample_dim: Optional[int] = None,
     stack_dim: int = -1,
@@ -106,7 +103,7 @@ def xr_to_np(
 
 
 def timestamps_from_xr(
-    ds: xr.Dataset, delta: str, tz: Optional[str] = "UTC"
+    ds: "xr.Dataset", delta: str, tz: Optional[str] = "UTC"
 ) -> np.ndarray:
     r"""Compute a 2D array of timezone-aware timestamps by combining a reference
     time coordinate with a time-delta coordinate.

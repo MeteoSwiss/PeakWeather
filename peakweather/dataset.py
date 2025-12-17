@@ -1,7 +1,6 @@
 import os
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     List,
     Literal,
     Mapping,
@@ -22,9 +21,6 @@ from .utils import (
     to_pandas_freq,
     xr_to_np,
 )
-
-if TYPE_CHECKING:
-    import xarray as xr
 
 FrameArray = Union[pd.DataFrame, np.ndarray]
 
@@ -58,13 +54,13 @@ class Windows:
             (default: :obj:`None`)
     """
 
-    x: Union[pd.DataFrame, np.ndarray, xr.Dataset]
-    mask_x: Union[pd.DataFrame, np.ndarray, xr.Dataset]
-    y: Union[pd.DataFrame, np.ndarray, xr.Dataset]
-    mask_y: Union[pd.DataFrame, np.ndarray, xr.Dataset]
+    x: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
+    mask_x: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
+    y: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
+    mask_y: Union[pd.DataFrame, np.ndarray, "xr.Dataset"]
     index_x: Optional[Union[pd.DatetimeIndex, np.ndarray]] = None
     index_y: Optional[Union[pd.DatetimeIndex, np.ndarray]] = None
-    nwp: Optional[Union[np.ndarray, xr.Dataset]] = None
+    nwp: Optional[Union[np.ndarray, "xr.Dataset"]] = None
     nwp_to_y: Optional[Sequence[int]] = None
 
 
@@ -1017,7 +1013,7 @@ class PeakWeatherDataset:
         return windows_xr
 
     def align_windows(
-        self, obs: Windows, nwp: xr.Dataset, drop_extra_y_pars: bool, as_xarray: bool
+        self, obs: Windows, nwp: "xr.Dataset", drop_extra_y_pars: bool, as_xarray: bool
     ):
         """Align observation windows with NWP forecast windows along the time axis.
 
