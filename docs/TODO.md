@@ -1,3 +1,0 @@
-- [ ] improve credits/contributors?
-- [ ] improve description of the topographic feats
-- [ ] add tsl refs and demo

@@ -21,6 +21,7 @@ dependencies = ["numpy>=1.20", "pandas>=1.2", "tqdm>=4.50", "pyarrow"]
 [project.optional-dependencies]
 topography = ["xarray", "zarr<3.0.0"]
 docs = ["sphinx", "nbsphinx", "myst_parser", "furo", "ipython", "sphinx-copybutton"]
+dev = ["pytest"]
 
 [tool.flit]
 module = "peakweather"
@@ -30,13 +31,15 @@ module = "peakweather"
 line-length = 88
 indent-width = 4
 target-version = "py38"
+exclude = ["test"]
 
 [tool.ruff.lint]
 select = ["D", "E", "F", "I", "W"]
+ignore = ["D100", "D105", "D107", "D205"]
 
 [tool.ruff.format]
 quote-style = "double"
-skip-magic-trailing-comma = true
+skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff.lint.pydocstyle]
