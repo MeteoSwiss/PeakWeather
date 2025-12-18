@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     List,
     Literal,
     Mapping,
@@ -12,6 +13,9 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    import xarray as xr
 
 from .io import download_url, extract_zip, import_xarray
 from .utils import (
@@ -152,7 +156,7 @@ class PeakWeatherDataset:
     __version__ = "0.2.0"
 
     base_url = (
-        "https://huggingface.co/datasets/MeteoSwiss/PeakWeather/resolve/main/data/"
+        "https://huggingface.co/datasets/MeteoSwiss/PeakWeather/resolve/v0.2.0/data/"
     )
 
     available_parameters = {
@@ -196,7 +200,7 @@ class PeakWeatherDataset:
 
     def __init__(
         self,
-        root: str = None,
+        root: Optional[str] = None,
         pad_missing_values: bool = True,
         years: Optional[Union[int, Sequence[int]]] = None,
         parameters: Optional[Union[str, Sequence[str]]] = None,
@@ -204,10 +208,10 @@ class PeakWeatherDataset:
         extended_nwp_pars: Optional[Union[str, Sequence[str]]] = "none",
         imputation_method: Literal["locf", "zero", None] = "zero",
         interpolation_method: str = "nearest",
-        freq: str = None,
+        freq: Optional[str] = None,
         compute_uv: bool = True,
         station_type: Optional[Literal["rain_gauge", "meteo_station"]] = None,
-        aggregation_methods: dict[str, str] = None,
+        aggregation_methods: Optional[dict[str, str]] = None,
     ):
         # set root path
         self.root = root
@@ -583,7 +587,7 @@ class PeakWeatherDataset:
                 )
         return df_resampled
 
-    def load_raw(self, aggregation_methods: dict[str, str] = None):
+    def load_raw(self, aggregation_methods: Optional[dict[str, str]] = None):
         """Load the raw dataset.
 
         This method downloads the dataset if it is not already present
@@ -710,7 +714,7 @@ class PeakWeatherDataset:
         df_topography = pd.DataFrame(topography_dict, index=stations_table.index)
         return df_topography
 
-    def load(self, aggregation_methods: dict[str, str] = None):
+    def load(self, aggregation_methods: Optional[dict[str, str]] = None):
         """Load the dataset.
 
         This method downloads the dataset if it is not already present and loads the
@@ -985,7 +989,12 @@ class PeakWeatherDataset:
 
         return self.np_windows_as_xr(windows, stations, parameters)
 
-    def np_windows_as_xr(self, windows: Windows, stations, parameters):
+    def np_windows_as_xr(
+        self,
+        windows: Windows,
+        stations: Optional[Union[str, List[str]]],
+        parameters: Optional[Union[str, List[str]]],
+    ) -> Windows:
         """Convert numpy sliding windows to xarray Dataset.
 
         Args:
@@ -996,7 +1005,7 @@ class PeakWeatherDataset:
                 all parameters are used.
 
         Returns:
-            xarray.Dataset: Sliding windows in xarray format.
+            Windows: Sliding windows in xarray.Dataset format.
         """
         windows_coordinates = self._get_windows_coordinates(
             windows=windows, stations=stations, parameters=parameters
@@ -1014,7 +1023,7 @@ class PeakWeatherDataset:
 
     def align_windows(
         self, obs: Windows, nwp: "xr.Dataset", drop_extra_y_pars: bool, as_xarray: bool
-    ):
+    ) -> Tuple[Windows, Union["xr.Dataset", np.ndarray]]:
         """Align observation windows with NWP forecast windows along the time axis.
 
         Args:
@@ -1326,7 +1335,7 @@ class PeakWeatherDataset:
             index_y=windows.index_y,
         )
 
-    def load_icon_data(self, icon_parameter: Union[str, Sequence[str]]):
+    def load_icon_data(self, icon_parameter: Union[str, Sequence[str]]) -> "xr.Dataset":
         """Returns an :class:`xarray.Dataset` with the requested parameters.
 
         Args:
