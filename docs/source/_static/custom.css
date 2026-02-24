@@ -1,3 +1,11 @@
-a:visited {
-  color: inherit !important;
+body {
+    --color-brand-secondary: #537a4a;
+}
+
+body[data-theme="dark"] {
+    --color-brand-secondary: #78af6c;
+}
+
+strong, h1, h2, h3, h4, h5, h6, .headerlink {
+    color: var(--color-brand-secondary);
 }
