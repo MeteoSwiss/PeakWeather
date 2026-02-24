@@ -116,7 +116,8 @@ class PeakWeatherDataset:
             If :obj:`None`, the dataset is stored in the current working directory.
             (default: :obj:`None`)
         pad_missing_values (bool, optional): If :obj:`True`, pad missing
-            parameter values with NaN values.
+            parameter values with NaN values. Padding missing data is recommended
+            when working with arrays and tensors.
             (default: :obj:`True`)
         years (int or list of int, optional): The years to include in the dataset.
             If :obj:`None`, all available years are included.
@@ -131,7 +132,8 @@ class PeakWeatherDataset:
             (default: :obj:`"none"`)
         imputation_method (str, optional): The method to use for imputing missing
             values. Options are "locf" (last observation carried forward), "zero"
-            (fill with zero), or :obj:`None` (no imputation). (default: :obj:`"zero"`)
+            (fill with zero), or :obj:`None` (no imputation).
+            (default: :obj:`"zero"`)
         interpolation_method (str, optional): The method to use for interpolating
             topography variables. Options are "linear", "nearest", "quadratic",
             "cubic", "barycentric", "krogh", "akima", or "makima".
@@ -209,7 +211,7 @@ class PeakWeatherDataset:
         imputation_method: Literal["locf", "zero", None] = "zero",
         interpolation_method: str = "nearest",
         freq: Optional[str] = None,
-        compute_uv: bool = True,
+        compute_uv: bool = False,
         station_type: Optional[Literal["rain_gauge", "meteo_station"]] = None,
         aggregation_methods: Optional[dict[str, str]] = None,
     ):
@@ -537,7 +539,7 @@ class PeakWeatherDataset:
         if "wind_direction" in self.parameter_map and not self.compute_uv:
             df_observations = self._add_uv_columns(df_observations=df_observations)
             df_parameters = df_parameters.copy()
-            wind_aggr = df_parameters.loc["wind_direction", "aggregation"]
+            wind_aggr = df_parameters.loc["wind_speed", "aggregation"]
             df_parameters.loc["wind_u", "aggregation"] = wind_aggr
             df_parameters.loc["wind_v", "aggregation"] = wind_aggr
         resampled_dfs = []
@@ -742,8 +744,13 @@ class PeakWeatherDataset:
         df_stations = df_stations.loc[stations]
 
         if self.pad_missing_values:
+            # Add missing (station, parameter) columns and fill them with NaN values
+            # to have a complete grid
             df_observations = df_add_missing_columns(
-                df_observations, col0=df_stations.index, col1=df_params.index
+                df_observations,
+                col0=df_stations.index,
+                col1=df_params.index,
+                fill_value=np.nan,
             )
 
         df_mask = ~(df_observations.isna())
@@ -838,13 +845,19 @@ class PeakWeatherDataset:
         print(pretty_df.to_string(index=False))
 
     def _export_df(
-        self, df: pd.DataFrame, as_numpy: bool = False, copy: bool = True
+        self,
+        df: pd.DataFrame,
+        as_numpy: bool = False,
+        copy: bool = True,
+        fill_value=np.nan,
     ) -> FrameArray:
         if as_numpy:
             stations = df.columns.unique(0)
             parameters = df.columns.unique(1)
             if not self.pad_missing_values:
-                df = df_add_missing_columns(df, col0=stations, col1=parameters)
+                df = df_add_missing_columns(
+                    df, col0=stations, col1=parameters, fill_value=fill_value
+                )
             df = df.values.reshape(-1, len(stations), len(parameters))
         elif copy:
             df = df.copy()
@@ -889,7 +902,9 @@ class PeakWeatherDataset:
                 If given, `first_date` and `last_date` must be None.
                 (default: :obj:`None`)
             as_numpy (bool, optional): If :obj:`True`, return the observations as a
-                :class:`~numpy.ndarray` instead of a :class:`~pandas.DataFrame`.
+                :class:`~numpy.ndarray` instead of a :class:`~pandas.DataFrame`. The
+                returned array may have missing values filled with NaNs if the dataset
+                is initialized with `pad_missing_values` set to :obj:`False`.
                 (default: :obj:`False`)
             return_mask (bool, optional): If :obj:`True`, return the mask as well.
                 (default: :obj:`False`)
@@ -936,7 +951,7 @@ class PeakWeatherDataset:
 
         # Get mask
         mask = self.mask.loc[index_loc, (stations_loc, parameters_loc)]
-        mask = self._export_df(mask, as_numpy=as_numpy, copy=copy)
+        mask = self._export_df(mask, as_numpy=as_numpy, copy=copy, fill_value=False)
         return observations, mask
 
     def get_observation_windows(
@@ -971,7 +986,7 @@ class PeakWeatherDataset:
 
         index = observations.index
         observations = self._export_df(observations, as_numpy=True, copy=False)
-        mask = self._export_df(mask, as_numpy=True, copy=False)
+        mask = self._export_df(mask, as_numpy=True, copy=False, fill_value=False)
 
         x = sliding_window_view(observations[:-horizon_size], window_size)
         mask_x = sliding_window_view(mask[:-horizon_size], window_size)
@@ -1146,7 +1161,9 @@ class PeakWeatherDataset:
                 (default: :obj:`True`)
             as_xarray (bool, optional): If :obj:`True`, return the Windows with x,
                 mask_x, y and mask_y as a :class:`~xarray.Dataset` instead of a
-                :class:`~np.ndarray`.
+                :class:`~np.ndarray`. The returned data may have missing values filled
+                with NaNs if the dataset is initialized with `pad_missing_values` set to
+                :obj:`False`.
                 (default: :obj:`False`)
 
         Returns:
