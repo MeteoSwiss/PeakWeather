@@ -31,30 +31,31 @@ FrameArray = Union[pd.DataFrame, np.ndarray]
 
 @dataclass
 class Windows:
-    """Windows is a data class containing sliding window data, either as
-    :class:`numpy.ndarray`, :pandas.DataFrame`, or :class:`xarray.Dataset`.
+    """Windows is a data class containing sliding-window data as
+    :class:`numpy.ndarray`, :class:`pandas.DataFrame`, or :class:`xarray.Dataset`.
 
     Args:
-        x (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Input data of the
+        x (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Input data for the
             look-back window.
         mask_x (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Boolean mask for
-            :attr:`x` indicating valid or missing values.
-        y (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Target data of the
-            horizon window.
+            :attr:`x` indicating valid or missing values (:obj:`True` = observed,
+            :obj:`False` = missing).
+        y (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Target data for the
+            forecast horizon window.
         mask_y (pandas.DataFrame | numpy.ndarray | xarray.Dataset): Boolean mask for
-            :attr:`y` indicating valid or missing values.
+            :attr:`y` indicating valid or missing values (:obj:`True` = observed,
+            :obj:`False` = missing).
         index_x (pandas.DatetimeIndex | numpy.ndarray, optional): Timestamps or indices
-            corresponding to the values in :attr:`x`.
+            corresponding to :attr:`x`.
             (default: :obj:`None`)
         index_y (pandas.DatetimeIndex | numpy.ndarray, optional): Timestamps or indices
-            corresponding to the values in :attr:`y`.
+            corresponding to :attr:`y`.
             (default: :obj:`None`)
         nwp (numpy.ndarray | xarray.Dataset, optional): Numerical Weather Prediction
             (ICON-CH1-EPS) data associated with the target horizon.
             (default: :obj:`None`)
-        nwp_to_y (Sequence[int], optional): Mapping of NWP parameters to the target
-            parameters in :attr:`y`. Specifies which NWP variables correspond to which
-            target variables.
+        nwp_to_y (Sequence[int], optional): Mapping from NWP parameters to target
+            parameters in :attr:`y`.
             (default: :obj:`None`)
     """
 
@@ -83,8 +84,8 @@ class PeakWeatherDataset:
     Weather Station Measurements for Spatiotemporal Deep Learning"
     <https://arxiv.org/abs/2506.13652>`_ (Zambon et al., 2025).
 
-    This class loads and reads the PeakWeather dataset, providing utilities for
-    accessing, preprocessing, and integrating the data into machine learning workflows.
+    This class loads the PeakWeather dataset and provides utilities for accessing,
+    preprocessing, and integrating the data into machine learning workflows.
 
     Dataset size:
         + Time steps: 461952
@@ -143,17 +144,26 @@ class PeakWeatherDataset:
             included in the dataset.
             (default: :obj:`True`)
         station_type (str, optional): The type of stations to consider, either
-            meteorological stations or rain gauges. If not defined, all stations
-            will be included.
+            meteorological stations or rain gauges. If not specified, all stations
+            are included.
             (default: :obj:`None`)
-        aggregation_methods (dict, optional): If given allows to apply a different
-            aggregation than the default one to the specified parameters. The
-            dictionary must map the parameter string name to one of :obj:`"mean"`,
-            :obj:`"max"`, :obj:`"sum"`, :obj:`"last"`.
+        aggregation_methods (dict, optional): If given, allows specifying non-default
+            aggregation strategies for selected parameters. The dictionary must map
+            a parameter name to one of :obj:`"mean"`, :obj:`"max"`, :obj:`"sum"`,
+            :obj:`"sum_straight"`, :obj:`"last"`, :obj:`"circ_mean"`, or
+            :obj:`"dir_from_uv"`.
+            The difference between :obj:`"sum_straight"` and :obj:`"sum"` is that the
+            former sums the available values in the resampling window, while the
+            latter handles missing observations by implicitly imputing them with the
+            mean of the available values.
+            The aggregations :obj:`"circ_mean"` and :obj:`"dir_from_uv"` are intended
+            for the parameter 'wind_direction': :obj:`"circ_mean"` computes the
+            circular mean of the wind direction, while :obj:`"dir_from_uv"` computes
+            wind direction from the direction of the aggregated u-v wind components.
             (default: :obj:`None`)
     """
 
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     base_url = (
         "https://huggingface.co/datasets/MeteoSwiss/PeakWeather/resolve/v0.2.0/data/"
@@ -476,23 +486,30 @@ class PeakWeatherDataset:
         }
         return topography
 
-    def _add_uv_columns(self, df_observations: pd.DataFrame) -> pd.DataFrame:
-        # Select wind speed and direction columns
-        speed = df_observations.xs("wind_speed", axis=1, level=1)
+    def _add_uv_columns(
+        self, df_observations: pd.DataFrame, unit_uv: bool = False
+    ) -> pd.DataFrame:
+        # Select wind direction column
         direction = df_observations.xs("wind_direction", axis=1, level=1)
-        # Select only the columns that are present in both DataFrames
-        cols = speed.columns.intersection(direction.columns).sort_values()
-        speed = speed.loc[:, cols]
-        direction = direction.loc[:, cols]
+        cols = direction.columns
+        if not unit_uv:
+            speed = df_observations.xs("wind_speed", axis=1, level=1)
+            # Select only the columns that are present in both DataFrames
+            cols = speed.columns.intersection(direction.columns).sort_values()
+            speed = speed.loc[:, cols]
+            direction = direction.loc[:, cols]
         # Compute u and v components
         u, v = PeakWeatherDataset.get_uv_wind(
-            wind_speed=speed.values,
+            wind_speed=np.ones_like(direction.values) if unit_uv else speed.values,
             wind_direction=direction.values,
             direction_unit="deg",
         )
         # Create new columns for u and v components
         uv = np.stack([u, v], axis=-1).reshape(u.shape[0], -1)
-        uv_cols = pd.MultiIndex.from_product([cols, ["wind_u", "wind_v"]])
+        suffix = "_unit" if unit_uv else ""
+        uv_cols = pd.MultiIndex.from_product(
+            [cols, [f"wind_u{suffix}", f"wind_v{suffix}"]]
+        )
         df_uv = pd.DataFrame(uv, index=df_observations.index, columns=uv_cols)
         # Concatenate the new columns with the original DataFrame
         df_observations = pd.concat([df_observations, df_uv], axis=1)
@@ -501,11 +518,12 @@ class PeakWeatherDataset:
         return df_observations
 
     def _recompute_dir_from_uv(
-        self, df_observations, keep_uv: bool = True
+        self, df_observations, keep_uv: bool = True, unit_uv: bool = False
     ) -> pd.DataFrame:
-        # Select wind speed and direction columns
-        u = df_observations.xs("wind_u", axis=1, level=1)
-        v = df_observations.xs("wind_v", axis=1, level=1)
+        # Select u and v components of the wind direction
+        suffix = "_unit" if unit_uv else ""
+        u = df_observations.xs(f"wind_u{suffix}", axis=1, level=1)
+        v = df_observations.xs(f"wind_v{suffix}", axis=1, level=1)
         # Select only the columns that are present in both DataFrames
         cols = u.columns.intersection(v.columns).sort_values()
         u = u.loc[:, cols]
@@ -519,31 +537,53 @@ class PeakWeatherDataset:
         # Optional: drop the u and v columns
         if not keep_uv:
             df_observations = df_observations.drop(
-                columns=["wind_u", "wind_v"], level=1
+                columns=[f"wind_u{suffix}", f"wind_v{suffix}"], level=1
             )
         return df_observations
 
     def resample(
         self, df_observations: pd.DataFrame, df_parameters: pd.DataFrame
     ) -> pd.DataFrame:
-        """Resample the observations to the specified frequency.
+        """Resample observations to specified :attr:`freq`.
 
-        This method resamples the observations to the specified frequency
-        and returns the resampled DataFrame.
+        Args:
+            df_observations (pd.DataFrame): Observations.
+            df_parameters (pd.DataFrame): Parameter metadata including aggregation
+                strategies.
+
+        Returns:
+            pd.DataFrame: Resampled observations.
         """
         assert self.freq is not None, (
             "Resampling frequency is not set. Please set the 'freq' parameter."
         )
-        if "wind_direction" in self.parameter_map and not self.compute_uv:
-            df_observations = self._add_uv_columns(df_observations=df_observations)
+
+        # Prepare for resampling, handling special cases for wind direction aggregations
+        special_wind_dir_aggr = ["dir_from_uv", "circ_mean"]
+        wind_dir_aggr = None
+        if "wind_direction" in self.parameter_map:
+            wind_dir_aggr = df_parameters.loc["wind_direction", "aggregation"]
+
+        if wind_dir_aggr == "circ_mean":
+            df_observations = self._add_uv_columns(
+                df_observations=df_observations, unit_uv=True
+            )
             df_parameters = df_parameters.copy()
-            wind_aggr = df_parameters.loc["wind_direction", "aggregation"]
-            df_parameters.loc["wind_u", "aggregation"] = wind_aggr
-            df_parameters.loc["wind_v", "aggregation"] = wind_aggr
-        resampled_dfs = []
-        resample_methods = df_parameters.groupby("aggregation").groups
+            df_parameters.loc["wind_u_unit", "aggregation"] = "mean"
+            df_parameters.loc["wind_v_unit", "aggregation"] = "mean"
+        elif wind_dir_aggr == "dir_from_uv":
+            if not self.compute_uv:
+                df_observations = self._add_uv_columns(
+                    df_observations=df_observations, unit_uv=False
+                )
+            df_parameters = df_parameters.copy()
+            wind_speed_aggr = df_parameters.loc["wind_speed", "aggregation"]
+            df_parameters.loc["wind_u", "aggregation"] = wind_speed_aggr
+            df_parameters.loc["wind_v", "aggregation"] = wind_speed_aggr
 
         # Resample the data according to the aggregation method
+        resampled_dfs = []
+        resample_methods = df_parameters.groupby("aggregation").groups
         for method, cols in resample_methods.items():
             # Select the columns to resample
             df_cols = df_observations.loc[:, (slice(None), cols)]
@@ -553,16 +593,21 @@ class PeakWeatherDataset:
                 resampled_dfs.append(df_res.mean())
             elif method == "max":
                 resampled_dfs.append(df_res.max())
-            elif method == "sum":
+            elif method == "sum_straight":
                 resampled_dfs.append(df_res.sum(min_count=1))
+            elif method == "sum":
+                resampled_dfs.append(df_res.mean().mul(df_res.size(), axis=0))
             elif method == "last":
                 resampled_dfs.append(df_res.last())
-            elif method == "circ_mean":
-                # Set a placeholder. The actual computation is carried out separately
-                # below.
-                df_ph = df_res.last()
-                df_ph[:] = np.nan
-                resampled_dfs.append(df_ph)
+            elif method in special_wind_dir_aggr:
+                assert cols == ["wind_direction"], (
+                    f"Aggregation '{method}' is only supported for 'wind_direction'."
+                )
+                # The aggregation is resolved from the aggregated u and v components;
+                # here we set a placeholder.
+                df_placeholder = df_res.last()
+                df_placeholder[:] = np.nan
+                resampled_dfs.append(df_placeholder)
             else:
                 raise ValueError(f"Invalid resampling method: {method}.")
         # Concatenate the gust data with the rest of the data
@@ -571,20 +616,13 @@ class PeakWeatherDataset:
             "Resampling failed: number of columns do not match."
         )
 
-        # Handle circle mean aggragation (it's currently necessary and supported
-        # only for wind_direction)
-        if self.station_type != "rain_gauge" and "circ_mean" in resample_methods:
-            assert len(resample_methods["circ_mean"]) <= 1
-            if len(resample_methods["circ_mean"]) == 1:
-                assert resample_methods["circ_mean"][0] == "wind_direction"
-            if (
-                "wind_direction" in self.parameter_map
-                and "wind_direction" in resample_methods["circ_mean"]
-            ):
-                # If resampling happened, the accumulated angle needs to be inferred
-                df_resampled = self._recompute_dir_from_uv(
-                    df_observations=df_resampled, keep_uv=self.compute_uv
-                )
+        # Handle special wind direction aggragations
+        if wind_dir_aggr in special_wind_dir_aggr:
+            df_resampled = self._recompute_dir_from_uv(
+                df_observations=df_resampled,
+                keep_uv=False,
+                unit_uv=wind_dir_aggr == "circ_mean",
+            )
         return df_resampled
 
     def load_raw(self, aggregation_methods: Optional[dict[str, str]] = None):
@@ -779,11 +817,11 @@ class PeakWeatherDataset:
             wind_speed (np.ndarray): The wind speed.
             wind_direction (np.ndarray): The wind direction, increasing clockwise where
                 a northerly wind has 0 degrees.
-            direction_unit (Literal["deg", "rad], optional): The angle unit of measure.
+            direction_unit (Literal["deg", "rad"], optional): Angle unit.
                 (default: :obj:`"deg"`)
 
         Returns:
-            Tuple[np.ndarray]: Returns a tuple containing [u,v].
+            Tuple[np.ndarray, np.ndarray]: The tuple (u, v).
         """
         # Source: ECMWF
         # https://confluence.ecmwf.int/pages/viewpage.action?pageId=133262398
@@ -1374,16 +1412,14 @@ class PeakWeatherDataset:
             )
 
     def had_values_before(self, cutoff_time: Union[str, pd.Timestamp]) -> pd.Series:
-        """Returns a binary masks that informs whether a station measured a parameter
-        before the given cutoff time. This information is particularly important when
-        the task at hand relies on an inductive or transductive learning procedure.
+        """Return a binary mask indicating whether each station measured a
+        parameter before the given cutoff time.
 
         Args:
-            cutoff_time (str or pd.Timestamp): The timestamp (UTC) representing the
-                cutoff time.
+            cutoff_time (str or pd.Timestamp): Cutoff timestamp in UTC.
 
         Returns:
-            pd.Series: A binary series with a multi-index (station, parameter).
+            pd.Series: Binary (Boolean) series with a MultiIndex (station, parameter).
         """
         if isinstance(cutoff_time, str):
             cutoff_time = pd.Timestamp(cutoff_time, tz="UTC")
