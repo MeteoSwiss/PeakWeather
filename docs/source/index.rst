@@ -37,7 +37,7 @@ Related Resources
    | Preprint 2025.
    | https://arxiv.org/abs/2506.13652
 - **Code for an application to wind forecasting**: 
-   | https://github.com/Graph-Machine-Learning-Group/peakweather-wind-forecasting
+   | https://github.com/Graph-Machine-Learning-Group/peakweather-forecasting
 - Read the Docs **documentation**: 
    | https://peakweather.readthedocs.io/
 

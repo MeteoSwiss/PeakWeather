@@ -253,6 +253,7 @@ def test_station_type():
             extended_nwp_pars="all",
             station_type="rain_gauge",
             freq="h",
+            compute_uv=True,
         )
 
     ds_gauge = PeakWeatherDataset(
@@ -280,6 +281,14 @@ def test_dataset_computes_uv():
     assert (
         "wind_v" in ds.parameters
         and "wind_u" in ds.parameters
+        and "wind_direction" in ds.parameters
+    )
+    
+    ds = PeakWeatherDataset(root=TEST_DATA_ROOT, freq="h", years=2017, compute_uv=False)
+
+    assert (
+        "wind_v" not in ds.parameters
+        and "wind_u" not in ds.parameters
         and "wind_direction" in ds.parameters
     )
 
@@ -564,8 +573,8 @@ def test_get_multiple_nwp_in_windows():
 
     # Assert that the data variables in the nwp xr.Dataset corresponds to the
     # requested ones.
-    (np.array(list(windows.nwp.data_vars)) == np.array(nwp_vars)).all()
-    (np.array(list(windows.nwp.data_vars)) == np.array(list(windows.y.data_vars))).all()
+    assert (np.array(list(windows.nwp.data_vars)) == np.array(nwp_vars)).all()
+    assert (np.array(list(windows.nwp.data_vars)) == np.array(list(windows.y.data_vars))).all()
 
 
 def test_nwp_alignment():
@@ -737,3 +746,87 @@ def test_resample():
         ds2.observations.xs("precipitation", axis=1, level=1).values - 
         ds.observations.xs("precipitation", axis=1, level=1).values
     ).min() >= -1e-5
+
+
+def test_extra_stations():
+    ds = PeakWeatherDataset(TEST_DATA_ROOT, parameters='temperature', compute_uv=True)
+    ds.num_stations
+    num_wo_temp = (~ds.mask.xs("temperature", axis=1, level=1)).all().sum()
+    
+    ds2 = PeakWeatherDataset(TEST_DATA_ROOT, parameters='temperature', compute_uv=False)
+    ds2.num_stations
+
+    assert ds.num_stations - num_wo_temp == ds2.num_stations
+
+
+def test_padding_nans():
+
+    # with missing values padded
+    ds = PeakWeatherDataset(
+        root=TEST_DATA_ROOT,
+        station_type='meteo_station',
+        years=2017,
+        pad_missing_values=True,
+    )
+    assert (~ds.mask.isna()).all().all()
+    assert not np.isnan(ds.mask.values).any() 
+
+    obs_df, mask_df  = ds.get_observations(
+        parameters=['temperature', 'wind_speed', 'wind_gust'],
+        return_mask=True,
+        as_numpy=False
+    )
+    assert (~np.isnan(obs_df.values)).all() 
+    assert (~np.isnan(mask_df.values)).all() 
+
+    obs_np, mask_np = ds.get_observations(
+        parameters=['temperature', 'wind_speed', 'wind_gust'],
+        return_mask=True,
+        as_numpy=True
+    )
+    assert (~np.isnan(obs_np)).all() 
+    assert (~np.isnan(mask_np)).all() 
+
+    win_np = ds.get_observation_windows(
+        window_size=3, horizon_size=12, last_date="2017-11-21 00:00:00+00:00", as_xarray=False
+    )
+    assert (~np.isnan(win_np.mask_x)).all() 
+    assert (~np.isnan(win_np.mask_y)).all() 
+    assert (~np.isnan(win_np.x)).all() 
+    assert (~np.isnan(win_np.y)).all() 
+
+    # without missing values padded
+    ds = PeakWeatherDataset(
+        root=TEST_DATA_ROOT,
+        station_type='meteo_station',
+        pad_missing_values=False,
+    )
+    assert (~ds.mask.isna()).all().all()
+    assert not np.isnan(ds.mask.values).any() 
+
+    obs_df, mask_df = ds.get_observations(
+        parameters=['temperature', 'wind_speed', 'wind_gust'],
+        return_mask=True
+    )
+    assert (~mask_df.isna()).all().all()
+    assert (~obs_df.isna()).all().all() # no padding is required, so no added NaNs
+
+    obs_np, mask_np = ds.get_observations(
+        parameters=['temperature', 'wind_speed', 'wind_gust'],
+        return_mask=True,
+        as_numpy=True
+    )
+    assert np.isnan(obs_np).any()  # padding is required and NaNs are added
+    assert (~np.isnan(mask_np)).all()  # NaNs observations have the mask to False
+    assert mask_np[np.isnan(obs_np)].max() == 0.0  # all False 
+    np.isnan(obs_np) 
+
+    win_np = ds.get_observation_windows(
+        window_size=3, horizon_size=12, last_date="2017-11-21 00:00:00+00:00", as_xarray=False
+    )
+    assert (~np.isnan(win_np.mask_x)).all() 
+    assert (~np.isnan(win_np.mask_y)).all() 
+    assert np.isnan(win_np.x).any() 
+    assert np.isnan(win_np.y).any() 
+    assert win_np.mask_x[np.isnan(win_np.x)].max() == 0.0
+    assert win_np.mask_y[np.isnan(win_np.y)].max() == 0.0

@@ -26,7 +26,9 @@ def to_pandas_freq(freq: str):
     return freq
 
 
-def df_add_missing_columns(df: pd.DataFrame, col0=None, col1=None) -> pd.DataFrame:
+def df_add_missing_columns(
+    df: pd.DataFrame, col0=None, col1=None, fill_value=np.nan
+) -> pd.DataFrame:
     """Add missing columns to a MultiIndex :class:`~pandas.DataFrame` with NaN values.
 
     Args:
@@ -35,6 +37,8 @@ def df_add_missing_columns(df: pd.DataFrame, col0=None, col1=None) -> pd.DataFra
             columns. If :obj:`None`, will use the existing columns.
         col1 (list, optional): The second level of the :class:`~pandas.MultiIndex`
             columns. If :obj:`None`, will use the existing columns.
+        fill_value (scalar): The value to use for missing columns.
+            Default is `np.nan`.
 
     Returns:
         pd.DataFrame: The :class:`~pandas.DataFrame` with missing columns added.
@@ -44,7 +48,7 @@ def df_add_missing_columns(df: pd.DataFrame, col0=None, col1=None) -> pd.DataFra
     if col1 is None:
         col1 = df.columns.unique(1)
     columns = pd.MultiIndex.from_product((col0, col1))
-    return df.reindex(columns=columns).astype("float32")
+    return df.reindex(columns=columns, fill_value=fill_value).astype("float32")
 
 
 def sliding_window_view(data: np.ndarray, window_size: int) -> np.ndarray:
