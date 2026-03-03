@@ -34,7 +34,193 @@ def test_dataset_shapes():
         ds.get_observations(parameters="pressure", as_numpy=True)
 
 
+def test_wind_direction_computation():
+    # random u and v components between -10 and 10
+    u = np.random.rand(100) * 20 - 10  
+    v = np.random.rand(100) * 20 - 10
+    u_, v_ = PeakWeatherDataset.get_uv_wind(
+        wind_speed=PeakWeatherDataset.get_wind_speed(u, v),
+        wind_direction=PeakWeatherDataset.get_wind_direction(u, v),
+        direction_unit="deg",
+    )
+    assert np.allclose(u, u_)
+    assert np.allclose(v, v_)
+
+    # random dir component between -360 and 360 and speed between 0 and 20
+    d = np.random.rand(100) * 720 - 360
+    s = np.random.rand(100) * 20
+    u, v = PeakWeatherDataset.get_uv_wind(
+        wind_speed=s,
+        wind_direction=d,
+        direction_unit="deg",
+    )
+    s_ = PeakWeatherDataset.get_wind_speed(u, v)
+    d_ = PeakWeatherDataset.get_wind_direction(u, v)
+    assert np.allclose(s, s_)
+    assert np.allclose(d % 360, d_ % 360)
+
+    u, v = PeakWeatherDataset.get_uv_wind(
+        wind_speed=np.ones_like(d),
+        wind_direction=d,
+        direction_unit="deg",
+    )
+    s__ = PeakWeatherDataset.get_wind_speed(u, v)
+    d__ = PeakWeatherDataset.get_wind_direction(u, v)
+    assert np.allclose(s__, 1.0)
+    assert np.allclose(d_, d__)
+    
+    def check_wind_dir(obs, obs_rec, mask, eps_wind=1e-1):
+        wd0 = obs.xs("wind_direction", axis=1, level=1)
+        wd1 = obs_rec.xs("wind_direction", axis=1, level=1)
+        ws  = obs.xs("wind_speed", axis=1, level=1)
+    
+        m_wd = mask.xs("wind_direction", axis=1, level=1)
+        m_ws = mask.xs("wind_speed", axis=1, level=1)
+
+        # Align on union of station columns
+        wd0, wd1 = wd0.align(wd1, join="outer", axis=1)
+        ws, wd0  = ws.align(wd0, join="outer", axis=1)
+        m_wd, m_ws = m_wd.align(m_ws, join="outer", axis=1)
+        m_wd, wd0 = m_wd.align(wd0, join="outer", axis=1)
+        m_ws, wd1 = m_ws.align(wd1, join="outer", axis=1)
+
+        valid = (m_wd & m_ws).reindex_like(wd0).fillna(False) & (ws > eps_wind)
+
+        diff = ((wd0 - wd1 + 180) % 360) - 180
+        max_abs_err = diff.where(valid).abs().max().max()
+        return max_abs_err
+    
+    # test uv columns independently 
+    ds = PeakWeatherDataset(
+        root=TEST_DATA_ROOT, years=2017, compute_uv=False,
+    )
+
+    # test unit uv
+    obs = ds._add_uv_columns(ds.observations.copy(), unit_uv=True)
+    obs_rec = ds._recompute_dir_from_uv(obs.copy(), keep_uv=False, unit_uv=True)
+    obs_rec2 = ds._add_uv_columns(obs_rec.copy(), unit_uv=True)
+
+    assert check_wind_dir(obs, obs_rec, ds.mask) < 1e-4
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_u_unit", axis=1, level=1), 
+        obs_rec2.xs("wind_u_unit", axis=1, level=1), 
+        atol=1e-6
+    )
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_v_unit", axis=1, level=1), 
+        obs_rec2.xs("wind_v_unit", axis=1, level=1), 
+        atol=1e-6
+    )
+
+    # test not unit uv
+    obs = ds._add_uv_columns(ds.observations.copy(), unit_uv=False)
+    obs_rec = ds._recompute_dir_from_uv(obs.copy(), keep_uv=False, unit_uv=False)
+    obs_rec2 = ds._add_uv_columns(obs_rec.copy(), unit_uv=False)
+    assert check_wind_dir(obs, obs_rec, ds.mask) < 1e-4
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_u", axis=1, level=1), 
+        obs_rec2.xs("wind_u", axis=1, level=1), 
+        atol=1e-5
+    )
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_v", axis=1, level=1), 
+        obs_rec2.xs("wind_v", axis=1, level=1), 
+        atol=1e-5
+    )
+
+    # test without imputation
+    ds = PeakWeatherDataset(
+        root=TEST_DATA_ROOT, years=2017, compute_uv=False,
+        imputation_method=None,
+        pad_missing_values=None,
+    )
+    obs = ds._add_uv_columns(ds.observations.copy(), unit_uv=False)
+    obs_rec = ds._recompute_dir_from_uv(obs.copy(), keep_uv=False, unit_uv=False)
+    obs_rec2 = ds._add_uv_columns(obs_rec.copy(), unit_uv=False)
+    assert check_wind_dir(obs, obs_rec, ds.mask) < 1e-4
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_u", axis=1, level=1), 
+        obs_rec2.xs("wind_u", axis=1, level=1), 
+        atol=1e-5
+    )
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_v", axis=1, level=1), 
+        obs_rec2.xs("wind_v", axis=1, level=1), 
+        atol=1e-5
+    )
+
+    # test with precomputed uv 
+    ds = PeakWeatherDataset(
+        root=TEST_DATA_ROOT, years=2017, compute_uv=True
+    )
+
+    obs = ds.observations
+    obs_rec = ds._recompute_dir_from_uv(obs.copy(), keep_uv=False, unit_uv=False)
+    obs_rec2 = ds._add_uv_columns(obs_rec.copy(), unit_uv=False)
+    assert check_wind_dir(obs, obs_rec, ds.mask) < 1e-4
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_u", axis=1, level=1).where(ds.mask.xs("wind_u", axis=1, level=1)), 
+        obs_rec2.xs("wind_u", axis=1, level=1).where(ds.mask.xs("wind_u", axis=1, level=1)), 
+        atol=1e-5
+    )
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_v", axis=1, level=1).where(ds.mask.xs("wind_v", axis=1, level=1)), 
+        obs_rec2.xs("wind_v", axis=1, level=1).where(ds.mask.xs("wind_v", axis=1, level=1)), 
+        atol=1e-5
+    )
+
+    # test unit uv
+    obs = ds._add_uv_columns(ds.observations.copy(), unit_uv=True)
+    obs_rec = ds._recompute_dir_from_uv(obs.copy(), keep_uv=False, unit_uv=True)
+    obs_rec2 = ds._add_uv_columns(obs_rec.copy(), unit_uv=True)
+
+    assert check_wind_dir(obs, obs_rec, ds.mask) < 1e-4
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_u_unit", axis=1, level=1), 
+        obs_rec2.xs("wind_u_unit", axis=1, level=1), 
+        atol=1e-6
+    )
+    pd.testing.assert_frame_equal(
+        obs.xs("wind_v_unit", axis=1, level=1), 
+        obs_rec2.xs("wind_v_unit", axis=1, level=1), 
+        atol=1e-6
+    )
+
+
 def test_temporal_subset():
+    
+    ds_meteo_2017 = PeakWeatherDataset(
+        root=TEST_DATA_ROOT, years=2017, compute_uv=False
+    )
+
+    ds_meteo = PeakWeatherDataset(
+        root=TEST_DATA_ROOT, compute_uv=False
+    )
+
+    last_date = "2017-12-31 23:59"
+    pd.testing.assert_frame_equal(
+        ds_meteo_2017.get_observations(last_date=last_date),
+        ds_meteo.get_observations(
+            stations=ds_meteo_2017.stations, last_date=last_date
+        ),
+    )
+
+    ds_meteo_2017 = PeakWeatherDataset(
+        root=TEST_DATA_ROOT, years=2017, compute_uv=True
+    )
+
+    ds_meteo = PeakWeatherDataset(
+        root=TEST_DATA_ROOT, compute_uv=True
+    )
+
+    # last_date = "2017-12-31 23:59"
+    pd.testing.assert_frame_equal(
+        ds_meteo_2017.get_observations(last_date=last_date),
+        ds_meteo.get_observations(
+            stations=ds_meteo_2017.stations, last_date=last_date
+        ),
+    )
+
     ds_meteo_2017 = PeakWeatherDataset(
         root=TEST_DATA_ROOT, extended_nwp_pars="all", freq="h", years=2017
     )
@@ -44,9 +230,9 @@ def test_temporal_subset():
     )
 
     pd.testing.assert_frame_equal(
-        ds_meteo_2017.get_observations(last_date="2017-12-31 23:59"),
+        ds_meteo_2017.get_observations(last_date=last_date),
         ds_meteo.get_observations(
-            stations=ds_meteo_2017.stations, last_date="2017-12-31 23:59"
+            stations=ds_meteo_2017.stations, last_date=last_date
         ),
     )
 
@@ -525,6 +711,41 @@ def test_extra_nwp_pars():
         parameters=["temperature", "wind_speed", "wind_u"],
         nwp_parameters=["temperature", "wind_u"],
     )
+
+
+def test_resample():
+    ds = PeakWeatherDataset(
+        root=TEST_DATA_ROOT,
+        freq="h",
+        years=2025,
+        compute_uv=False,
+        parameters=["wind_direction", "precipitation"],
+        aggregation_methods={"wind_direction": "circ_mean", "precipitation": "sum_straight"},
+    )
+
+    with pytest.raises(KeyError):
+        ds = PeakWeatherDataset(
+            root=TEST_DATA_ROOT,
+            freq="h",
+            years=2025,
+            compute_uv=False,
+            parameters=["wind_direction"],
+            aggregation_methods={"wind_direction": "dir_from_uv"},
+        )
+
+    ds2 = PeakWeatherDataset(
+        root=TEST_DATA_ROOT,
+        freq="h",
+        years=2025,
+        compute_uv=False,
+        parameters=["wind_direction", "wind_speed", "precipitation"],
+        aggregation_methods={"wind_direction": "dir_from_uv", "precipitation": "sum"},
+    )
+
+    assert (
+        ds2.observations.xs("precipitation", axis=1, level=1).values - 
+        ds.observations.xs("precipitation", axis=1, level=1).values
+    ).min() >= -1e-5
 
 
 def test_extra_stations():
