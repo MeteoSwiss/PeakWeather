@@ -110,7 +110,7 @@ class PeakWeatherDataset:
         + :obj:`stations_table`: Information associated with the stations, including
           name, type, latitude, longitude, height, and topographical descriptors.
         + :obj:`installation_table`: Information about stations' installation.
-        + :obj:`parameters_table`: Description of the quantities measured.
+        + :obj:`parameters_table`: Descriptions of the measured quantities.
 
     Args:
         root (str, optional): The root directory where the dataset is stored.
@@ -123,9 +123,16 @@ class PeakWeatherDataset:
         years (int or list of int, optional): The years to include in the dataset.
             If :obj:`None`, all available years are included.
             (default: :obj:`None`)
+        parameters (str or list of str, optional): The parameters to include in the
+            dataset. If :obj:`None`, all parameters are included. Otherwise, it
+            returns the specified columns. Parameters that are not in among the
+            available parameters are ignored. The stored dataframe will contain
+            parameters sorted alphabetically, regardless of the order provided
+            in ``parameters``.
+            (default: :obj:`None`)
         extended_topo_vars (str or list of str, optional): The topography variables
             to include in the dataset. If :obj:`None`, no topography variables are
-            included.
+            included. Use :obj:`"all"` to include all available variables.
             (default: :obj:`"none"`)
         extended_nwp_pars (str or list of str, optional): The NWP (ICON-CH1-EPS)
             parameters to include in the dataset. If :obj:`None`, no NWP parameters are
@@ -139,12 +146,12 @@ class PeakWeatherDataset:
             topography variables. Options are "linear", "nearest", "quadratic",
             "cubic", "barycentric", "krogh", "akima", or "makima".
             (default: :obj:`"nearest"`)
-        freq (str, optional): The frequency to resample the dataset to. If :obj:`None`,
+        freq (str, optional): Resample frequency (e.g., "h" for hourly). If :obj:`None`,
             no resampling is applied.
             (default: :obj:`None`)
-        compute_uv (bool): Whether the u-v components of the wind should be computed and
-            included in the dataset.
-            (default: :obj:`True`)
+        compute_uv (bool, optional): Whether the u-v components of the wind should be
+            computed and included in the dataset.
+            (default: :obj:`False`)
         station_type (str, optional): The type of stations to consider, either
             meteorological stations or rain gauges. If not specified, all stations
             are included.
@@ -889,9 +896,42 @@ class PeakWeatherDataset:
         copy: bool = True,
         fill_value=np.nan,
     ) -> FrameArray:
+        """Prepare a multi-indexed DataFrame for export.
+
+        It reorders the columns so that the (station, parameter) pairs follow a
+        consistently order first by station, then by parameter; the order of stations 
+        and the order of parameters preserve those in the input DataFrame.
+        When ``as_numpy`` is ``True``, the DataFrame is converted to a 3-dimensional 
+        array of shape ``(time_steps, num_stations, num_parameters)``, padding missing
+        columns with ``fill_value`` if needed.
+
+        Args:
+            df (pd.DataFrame): Input DataFrame with a two-level MultiIndex on
+                columns (station, parameter).
+            as_numpy (bool, optional): If ``True``, return a
+                :class:`numpy.ndarray` instead of a DataFrame.
+                (default: ``False``)
+            copy (bool, optional): If ``True``, return a copy of the DataFrame.
+                (default: ``True``)
+            fill_value: Value used to fill missing (station, parameter) columns
+                when converting to numpy. 
+                (default: ``np.nan``)
+
+        Returns:
+            FrameArray: A :class:`pandas.DataFrame` or a 3-D
+                :class:`numpy.ndarray`, depending on ``as_numpy``.
+        """
+        stations = df.columns.unique(0)
+        parameters = df.columns.unique(1)
+
+        # Force stations first, then parameters, order in columns:
+        # (S1, P1), (S1, P2), (S1, P3), ..., (S2, P1), (S2, P2), ...
+        new_index = pd.MultiIndex.from_product(
+            [stations, parameters], names=df.columns.names
+        ).intersection(df.columns)
+        df = df[new_index]
+
         if as_numpy:
-            stations = df.columns.unique(0)
-            parameters = df.columns.unique(1)
             if not self.pad_missing_values:
                 df = df_add_missing_columns(
                     df, col0=stations, col1=parameters, fill_value=fill_value
@@ -925,10 +965,12 @@ class PeakWeatherDataset:
 
         Args:
             stations (str or list, optional): Station IDs to filter. If :obj:`None`,
-                all stations are used.
+                all stations are used. If specified, the output preserves the given 
+                station order.
                 (default: :obj:`None`)
             parameters (str or list, optional): Parameter IDs to filter. If :obj:`None`,
-                all parameters are used.
+                all parameters are used. If specified, the output preserves the given 
+                parameter order.
                 (default: :obj:`None`)
             first_date (str or pd.Timestamp, optional): Start date for filtering.
                 If :obj:`None`, no temporal filtering is applied.
@@ -1168,10 +1210,12 @@ class PeakWeatherDataset:
             window_size (int): Size of the input window.
             horizon_size (int): Size of the output horizon.
             stations (str or list, optional): Station IDs to filter. If :obj:`None`,
-                all stations are used.
+                all stations are used. If specified, the output preserves the given 
+                station order.
                 (default: :obj:`None`)
             parameters (str or list, optional): Parameter IDs to filter.
-                If :obj:`None`, all parameters are used.
+                If :obj:`None`, all parameters are used. If specified, the output 
+                preserves the given parameter order.
                 (default: :obj:`None`)
             first_date (str or pd.Timestamp, optional): Start date for filtering.
                 If :obj:`None`, no temporal filtering is applied.
