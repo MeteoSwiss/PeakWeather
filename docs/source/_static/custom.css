@@ -6,6 +6,55 @@ body[data-theme="dark"] {
     --color-brand-secondary: #78af6c;
 }
 
+@media (prefers-color-scheme: dark) {
+    body:not([data-theme="light"]) {
+        --color-brand-secondary: #78af6c;
+    }
+}
+
 strong, h1, h2, h3, h4, h5, h6, .headerlink {
     color: var(--color-brand-secondary);
+}
+
+
+/* Jupyter notebook styling */
+
+body[data-theme="dark"] .nboutput .output_area.stderr
+{
+    background: inherit !important;
+    color: inherit !important;
+}
+
+body[data-theme="dark"] .nboutput .output_area table.dataframe th,
+body[data-theme="dark"] .nboutput .output_area table.dataframe td {
+    background: #111318;
+    color: #e6edf3;
+}
+
+body[data-theme="dark"] .nboutput .output_area table.dataframe tbody tr:nth-child(odd) th,
+body[data-theme="dark"] .nboutput .output_area table.dataframe tbody tr:nth-child(odd) td
+{
+    background: #3f4553;
+}
+
+
+@media (prefers-color-scheme: dark) {
+    body:not([data-theme="light"]) .nboutput .output_area.stderr
+    {
+        background: inherit !important;
+        color: inherit !important;
+    }
+
+    body:not([data-theme="light"]) .nboutput .output_area table.dataframe th,
+    body:not([data-theme="light"]) .nboutput .output_area table.dataframe td {
+        background: #111318;
+        color: #e6edf3;
+    }
+
+    body:not([data-theme="light"]) .nboutput .output_area table.dataframe tbody tr:nth-child(odd) th,
+    body:not([data-theme="light"]) .nboutput .output_area table.dataframe tbody tr:nth-child(odd) td
+    {
+        background: #3f4553;
+    }
+
 }

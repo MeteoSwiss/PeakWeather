@@ -44,3 +44,9 @@ line-ending = "auto"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[project.urls]
+homepage = "https://peakweather.readthedocs.io"
+documentation = "https://peakweather.readthedocs.io"
+repository = "https://github.com/MeteoSwiss/PeakWeather.git"
+data = "https://huggingface.co/datasets/MeteoSwiss/PeakWeather"

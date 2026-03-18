@@ -36,7 +36,7 @@ Related Resources
    | *Daniele Zambon, Michele Cattaneo, Ivan Marisca, Jonas Bhend, Daniele Nerini, Cesare Alippi.*
    | Preprint 2025.
    | https://arxiv.org/abs/2506.13652
-- **Code for an application to wind forecasting**: 
+- **Code for an application to forecasting**: 
    | https://github.com/Graph-Machine-Learning-Group/peakweather-forecasting
 - Read the Docs **documentation**: 
    | https://peakweather.readthedocs.io/
@@ -45,20 +45,30 @@ Related Resources
 Quickstart
 ----------
 
-Install the dataset library. The base package handles the station measurements and the NWP predictions. It can be install by running the following command 
+Install PeakWeather from PyPI:
 
 .. code-block:: bash
 
-   pip install git+https://github.com/MeteoSwiss/PeakWeather.git # Install base package
+   pip install peakweather
 
+This installs the base package with support for station measurements and NWP predictions. 
 If access to the topographical descpitors is desired, then there are additional required libraries that can be installed via
 
 .. code-block:: bash
-   
-   pip install "peakweather[topography] @ git+https://github.com/MeteoSwiss/PeakWeather@main" # Install with extras
+
+   pip install peakweather[topography]       # Topographical descriptors
+
+Alternatively, install directly from GitHub:
+
+.. code-block:: bash
+
+   pip install git+https://github.com/MeteoSwiss/PeakWeather.git                         # Base
+   pip install "peakweather[topography] @ git+https://github.com/MeteoSwiss/PeakWeather" # With extras
 
 
-When the `PeakWeatherDataset` is instantiated for the first time, the weather data is downloaded.
+**First use**
+
+When the ``PeakWeatherDataset`` is instantiated for the first time, the weather data is downloaded.
 
 .. code-block:: python
 
@@ -66,7 +76,15 @@ When the `PeakWeatherDataset` is instantiated for the first time, the weather da
    # Download the data in the current working directory
    ds = PeakWeatherDataset(root=<PATH_TO_DATA>)
 
-For detailed usage and parameter descriptions, please refer to `documentation <modules/index.html>`_ of the PeakWeatherDataset class, which provides extended documentation on its functionality and options.
+For detailed usage and parameter descriptions, please refer to the `documentation <modules/index.html>`_ of the PeakWeatherDataset class, which provides extended documentation on its functionality and options.
+
+Authors
+-------
+
+-  `Daniele Zambon <https://dzambon.github.io>`_
+-  `Michele Cattaneo <https://github.com/MicheleCattaneo>`_
+-  `Ivan Marisca <https://marshka.github.io>`_
+
 
 Citation
 --------
