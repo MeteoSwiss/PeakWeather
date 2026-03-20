@@ -4,8 +4,19 @@
 
 # PeakWeather
 
-[Documentation](https://peakweather.readthedocs.io/) — [Demo notebook](https://peakweather.readthedocs.io/latest/examples/peakweather_demo.html) — [Data](https://huggingface.co/datasets/meteoswiss/PeakWeather) — [Paper](https://arxiv.org/abs/2506.13652) 
+MeteoSwiss Weather Station Measurements for Spatiotemporal Deep Learning.
 
+[![Dataset on HF](https://huggingface.co/datasets/huggingface/badges/resolve/main/dataset-on-hf-md.svg)](https://huggingface.co/datasets/MeteoSwiss/PeakWeather)
+
+<p>
+<a href='https://pypi.org/project/peakweather/'><img alt="PyPI" src="https://img.shields.io/pypi/v/peakweather"></a>
+<img alt="PyPI - Python Version" src="https://img.shields.io/badge/python-%3E%3D3.8-blue">
+<a href='https://peakweather.readthedocs.io/latest/'><img src='https://readthedocs.org/projects/peakweather/badge/?version=latest' alt='Documentation Status' /></a>
+<a href='https://pepy.tech/projects/peakweather'><img src='https://static.pepy.tech/badge/peakweather' alt='Total Downloads' /></a>
+</p>
+
+📚 [Documentation](https://peakweather.readthedocs.io/) — 💻 [Demo notebook](https://peakweather.readthedocs.io/latest/examples/peakweather_demo.html) — 🤗 [Data](https://huggingface.co/datasets/MeteoSwiss/PeakWeather) — 📄 [Paper](https://arxiv.org/abs/2506.13652) 
+<hr>
 </div>
 
 **PeakWeather** is a high-resolution, benchmark-ready **dataset** for spatiotemporal weather modeling.
