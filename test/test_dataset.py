@@ -839,7 +839,7 @@ def test_parameter_order():
     stations = ['ARH', 'ARO', 'ATT', 'BAS', 'BEH'][::-1]
  
     # This creates ds.observations with parameters alphabetically sorted, 
-    # regarless of the order passed in parameters=parameters. 
+    # regardless of the order passed in parameters=parameters. 
     ds = PeakWeatherDataset(
         root=TEST_DATA_ROOT,
         station_type='meteo_station',
