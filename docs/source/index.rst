@@ -74,7 +74,9 @@ When the ``PeakWeatherDataset`` is instantiated for the first time, the weather 
 
    from peakweather.dataset import PeakWeatherDataset
    # Download the data in the current working directory
-   ds = PeakWeatherDataset(root=<PATH_TO_DATA>)
+   ds = PeakWeatherDataset(root=None)
+   # Or specify a custom directory
+   # ds = PeakWeatherDataset(root="path/to/data")
 
 For detailed usage and parameter descriptions, please refer to the `documentation <modules/index.html>`_ of the PeakWeatherDataset class, which provides extended documentation on its functionality and options.
 
