@@ -56,14 +56,14 @@ If access to the topographical descriptors is desired, then there are additional
 
 .. code-block:: bash
 
-   pip install peakweather[topography]       # Topographical descriptors
+   pip install peakweather[extended]       # Topographical descriptors and NWP forecasts
 
 Alternatively, install directly from GitHub:
 
 .. code-block:: bash
 
    pip install git+https://github.com/MeteoSwiss/PeakWeather.git                         # Base
-   pip install "peakweather[topography] @ git+https://github.com/MeteoSwiss/PeakWeather" # With extras
+   pip install "peakweather[extended] @ git+https://github.com/MeteoSwiss/PeakWeather"   # With extras
 
 
 **First use**

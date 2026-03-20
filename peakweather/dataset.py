@@ -124,11 +124,10 @@ class PeakWeatherDataset:
             If :obj:`None`, all available years are included.
             (default: :obj:`None`)
         parameters (str or list of str, optional): The parameters to include in the
-            dataset. If :obj:`None`, all parameters are included. Otherwise, it
-            returns the specified columns. Parameters that are not in among the
-            available parameters are ignored. The stored dataframe will contain
-            parameters sorted alphabetically, regardless of the order provided
-            in ``parameters``.
+            dataset. If :obj:`None`, all available parameters are included. Otherwise,
+            the dataset will include only the requested parameters that are available.
+            The stored dataframe will contain parameter columns sorted alphabetically,
+            regardless of the order provided in ``parameters``.
             (default: :obj:`None`)
         extended_topo_vars (str or list of str, optional): The topography variables
             to include in the dataset. If :obj:`None`, no topography variables are
@@ -241,7 +240,7 @@ class PeakWeatherDataset:
         if self.station_type == "rain_gauge" and self.compute_uv:
             raise ValueError(
                 "Cannot compute wind components on a dataset with rain gauges only "
-                "(station_type='rain_gauge and compute_uv=True')"
+                "(station_type='rain_gauge' and compute_uv=True)"
             )
 
         # Select parameters
@@ -260,8 +259,8 @@ class PeakWeatherDataset:
             view_params = view_params.intersection(params)
             if not len(view_params):
                 raise ValueError(
-                    f"Incorrect choice for 'parameters' ({parameters}). "
-                    f"Must be a subset of {self.available_parameters}."
+                    f"Invalid 'parameters' ({parameters}). "
+                    f"Valid options are: {set(self.available_parameters.keys())}."
                 )
         self.parameter_map = {
             k: self.available_parameters[k] for k in sorted(view_params)
@@ -274,8 +273,8 @@ class PeakWeatherDataset:
             view_years = view_years.intersection(years)
             if not len(view_years):
                 raise ValueError(
-                    f"Incorrect choice for 'year' ({years}). "
-                    f"Must be a subset of {self.available_years}."
+                    f"Invalid 'years' ({years}). "
+                    f"Valid options are {self.available_years}."
                 )
         self.years = sorted(view_years)
 
@@ -293,9 +292,8 @@ class PeakWeatherDataset:
             view_topos = self.available_topography.intersection(extended_topo_vars)
             if not len(view_topos):
                 raise ValueError(
-                    "Incorrect choice for 'extended_topo_vars' "
-                    f"({extended_topo_vars}). Must be a subset of "
-                    f"{self.available_topography}."
+                    f"Invalid 'extended_topo_vars': {extended_topo_vars}. "
+                    f"Valid options are: {self.available_topography}."
                 )
         self.extended_topo_vars = sorted(view_topos)
 
@@ -313,9 +311,8 @@ class PeakWeatherDataset:
             view_nwp = self.available_icon.intersection(extended_nwp_pars)
             if not len(view_nwp):
                 raise ValueError(
-                    "Incorrect choice for 'extended_nwp_pars' "
-                    f"({extended_nwp_pars}). Must be a subset of "
-                    f"{self.available_icon}."
+                    f"Invalid 'extended_nwp_pars': {extended_nwp_pars}. "
+                    f"Valid options are: {self.available_icon}."
                 )
         self.extended_nwp_pars = sorted(view_nwp)
 
@@ -481,9 +478,10 @@ class PeakWeatherDataset:
     def load_topography(self) -> dict:
         """Load the topography data.
 
-        This method downloads the topography data if it is not already present
-        and loads the data into memory. The data is returned as a dictionary
-        containing the topography data for each variable.
+        This method loads the topography data specified in 
+        :attr:`extended_topo_vars`. The data is returned as a dictionary
+        containing the topography data as :class:`xarray.Dataset` objects,
+        indexed by their variable names with the prefix ``topo_`` stripped.
         """
         if len(self.extended_topo_vars) == 0:
             return {}

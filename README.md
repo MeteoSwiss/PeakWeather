@@ -41,17 +41,17 @@ pip install peakweather
 ```
 
 This installs the base package with support for station measurements and NWP predictions.
-To also access the topographical descriptors, install the extra dependencies:
+To also access the topographical descriptors and the NWP data, install the extra dependencies:
 
 ```shell
-pip install peakweather[topography]
+pip install peakweather[extended]
 ```
 
 Alternatively, install directly from GitHub to stay up to date with the latest developments:
 
 ```shell
 pip install git+https://github.com/MeteoSwiss/PeakWeather.git 
-pip install "peakweather[topography] @ git+https://github.com/MeteoSwiss/PeakWeather"  # With extras
+pip install "peakweather[extended] @ git+https://github.com/MeteoSwiss/PeakWeather"  # With extras
 ```
 
 ### Load the dataset
