@@ -52,7 +52,7 @@ Install PeakWeather from PyPI:
    pip install peakweather
 
 This installs the base package with support for station measurements and NWP predictions. 
-If access to the topographical descpitors is desired, then there are additional required libraries that can be installed via
+If access to the topographical descriptors is desired, then there are additional required libraries that can be installed via
 
 .. code-block:: bash
 
