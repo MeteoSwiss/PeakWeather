@@ -899,8 +899,8 @@ class PeakWeatherDataset:
         """Prepare a multi-indexed DataFrame for export.
 
         It reorders the columns so that the (station, parameter) pairs follow a
-        consistently order first by station, then by parameter; the order of stations 
-        and the order of parameters preserve those in the input DataFrame.
+        consistent order, first by station then by parameter; the order of stations
+        and the order of parameters preserves that of the input DataFrame.
         When ``as_numpy`` is ``True``, the DataFrame is converted to a 3-dimensional 
         array of shape ``(time_steps, num_stations, num_parameters)``, padding missing
         columns with ``fill_value`` if needed.
