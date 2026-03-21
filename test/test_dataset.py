@@ -830,3 +830,66 @@ def test_padding_nans():
     assert np.isnan(win_np.y).any() 
     assert win_np.mask_x[np.isnan(win_np.x)].max() == 0.0
     assert win_np.mask_y[np.isnan(win_np.y)].max() == 0.0
+
+
+def test_parameter_order():
+    parameters = ["temperature", "pressure"]
+    window = 3
+    horizon = 12
+    stations = ['ARH', 'ARO', 'ATT', 'BAS', 'BEH'][::-1]
+ 
+    # This creates ds.observations with parameters alphabetically sorted, 
+    # regardless of the order passed in parameters=parameters. 
+    ds = PeakWeatherDataset(
+        root=TEST_DATA_ROOT,
+        station_type='meteo_station',
+        years=2021,
+        parameters=parameters,
+    ) 
+    
+    # Conversely, get_observations and get_windows keep the output sorted 
+    # in the order specified by the user-defined parameters.    
+    obs0 = ds.get_observations(as_numpy=True)
+    obs1 = ds.get_observations(parameters=parameters, as_numpy=True)
+    obs2 = ds.get_observations(parameters=parameters[::-1], as_numpy=True)
+ 
+    # obs0 is in alphabetical order (constructor's default)
+    # obs1 is in reverse alphabetical order (user-defined order)
+    # obs2 is in alphabetical order (reverse user-defined order)
+    assert np.allclose(obs1, obs0[..., ::-1]) 
+    assert np.allclose(obs1, obs2[..., ::-1]) 
+    assert np.allclose(obs0, obs2)
+
+    # obs0X parameters are in alphabetical order (constructor's default)
+    # obs1a and obs2b parameters are in reverse alphabetical order (user-defined order)
+    # obsXa have stations in reverse alphabetical order (user-defined order)
+    # obsXb have stations in alphabetical order (reverse user-defined order)
+    obs0a = ds.get_observations(stations=stations, as_numpy=True)
+    obs0b = ds.get_observations(stations=stations[::-1], as_numpy=True)
+    obs1a = ds.get_observations(stations=stations, parameters=parameters, as_numpy=True)
+    obs2b = ds.get_observations(stations=stations[::-1], parameters=parameters[::-1], as_numpy=True)
+ 
+    assert np.allclose(obs0a, obs0b[:, ::-1]) 
+    assert np.allclose(obs1a, obs0a[..., ::-1])
+    assert np.allclose(obs2b, obs0b)
+    assert np.allclose(obs2b, obs0a[:, ::-1])
+    assert np.allclose(obs1a, obs2b[:, ::-1, ::-1]) 
+
+    win1 = ds.get_windows(
+        window_size=window,
+        horizon_size=horizon,
+        parameters=parameters,
+    )
+
+    win2 = ds.get_windows(
+        window_size=window,
+        horizon_size=horizon,
+        parameters=parameters[::-1],
+    )
+
+    assert (win1.index_x == win2.index_x).all()
+    assert (win1.index_y == win2.index_y).all()
+    assert np.allclose(win1.x, win2.x[..., ::-1])
+    assert np.allclose(win1.y, win2.y[..., ::-1])
+    assert np.allclose(win1.mask_x, win2.mask_x[..., ::-1])
+    assert np.allclose(win1.mask_y, win2.mask_y[..., ::-1])
