@@ -171,7 +171,7 @@ class PeakWeatherDataset:
             (default: :obj:`None`)
     """
 
-    __version__ = "0.2.1"
+    __version__ = "0.2.2"
 
     base_url = (
         "https://huggingface.co/datasets/MeteoSwiss/PeakWeather/resolve/v0.2.0/data/"

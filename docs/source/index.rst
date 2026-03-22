@@ -6,6 +6,15 @@
 PeakWeather
 =========================
 
+.. raw:: html
+
+   <p>
+   <a href='https://pypi.org/project/peakweather/'><img alt="PyPI" src="https://img.shields.io/pypi/v/peakweather"></a>
+   <img alt="PyPI - Python Version" src="https://img.shields.io/badge/python-%3E%3D3.9-blue">
+   <a href='https://peakweather.readthedocs.io/latest/'><img src='https://readthedocs.org/projects/peakweather/badge/?version=latest' alt='Documentation Status' /></a>
+   <a href='https://pepy.tech/projects/peakweather'><img src='https://static.pepy.tech/badge/peakweather' alt='Total Downloads' /></a>
+   </p>
+
 **PeakWeather** is a high-resolution, benchmark-ready **dataset** for spatiotemporal weather modeling. 
 
 
@@ -36,7 +45,7 @@ Related Resources
    | *Daniele Zambon, Michele Cattaneo, Ivan Marisca, Jonas Bhend, Daniele Nerini, Cesare Alippi.*
    | Preprint 2025.
    | https://arxiv.org/abs/2506.13652
-- **Code for an application to forecasting**: 
+- Code for an **application to forecasting**: 
    | https://github.com/Graph-Machine-Learning-Group/peakweather-forecasting
 - Read the Docs **documentation**: 
    | https://peakweather.readthedocs.io/
